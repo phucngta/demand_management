@@ -8,6 +8,8 @@
     "application": True,
     "auto_install": False,
     'data': [
-        'view/period_view.xml'
+        'view/period_view.xml',
+        'view/mps_view.xml',
+        'view/forecast_view.xml'
     ]
 }

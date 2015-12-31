@@ -10,15 +10,29 @@ from openerp import models, fields, api, exceptions
 class Term(models.Model):
     _name = 'demand.term'
     _description = 'Demand term'
+
+    @api.one
+    @api.depends('period_ids')
+    def _get_period_count(self):
+        period_lst = []
+        for line in self.period_ids:
+            if line.id:
+                period_lst.append(line.id)
+        self.period_count = len(period_lst)
+
     name = fields.Char('Term Name', required=True)
     date_start= fields.Date('Start of Term', required=True, states={'done':[('readonly',True)]})
     date_end= fields.Date('End of Term', required=True, states={'done':[('readonly',True)]})
-    num_cycle=fields.Integer('Number of Cycles')
-    # tp = fields.Char()
-    type_period=fields.Selection([('day','day(s)'),('week','week(s)'),('month','month(s)')],default='day')
-    state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, copy=False, default='draft')
-    period_ids = fields.One2many('demand.period', 'term_id', string= 'Periods')
+
+    num_cycle=fields.Integer('Number of Cycles', default='1', states={'done':[('readonly',True)]})
+    type_period=fields.Selection([('day','day(s)'),('week','week(s)'),('month','month(s)')],default='day', states={'done':[('readonly',True)]})
     
+    period_ids = fields.One2many('demand.period', 'term_id', string= 'Periods', states={'done':[('readonly',True)]})
+    period_count = fields.Integer(string="Period Count", compute=_get_period_count)
+
+    state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, copy=False, default='draft')
+    
+
     @api.one
     @api.constrains('date_start', 'date_end')
     def check_dates(self):
@@ -83,6 +97,18 @@ class Term(models.Model):
                         'term_id': self.id,
                     })
                     ds = ds + relativedelta(days = self.num_cycle)
+
+    # @api.one
+    # def delete_period(self):
+    #     sql='''
+    #         DELETE FROM demand_period
+    #         WHERE term_id = '%s'
+    #     '''%(self.id)
+    #     self.env.cr.execute(sql)
+
+    @api.one
+    def delete_period(self):
+        self.period_ids.unlink()
         
 
 class Period(models.Model):
@@ -92,7 +118,9 @@ class Period(models.Model):
     name = fields.Char('Period Name', required=True)
     date_start= fields.Date('Start of Period', required=True, states={'done':[('readonly',True)]})
     date_end= fields.Date('End of Period', required=True, states={'done':[('readonly',True)]})
-    term_id = fields.Many2one('demand.term', string='Term Name', required=True, states={'done':[('readonly',True)]}, select=True)
+
+    term_id = fields.Many2one('demand.term', string='Term', required=True, states={'done':[('readonly',True)]}, select=True)
+
     state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, copy=False, default='draft')
 
     @api.multi

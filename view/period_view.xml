@@ -7,161 +7,181 @@
       res_model="demand.period"
       view_mode="tree,form" />
 
-      <act_window id="action_demand_term"
-        name="Terms"
-        res_model="demand.term"
-        view_mode="tree,form" />
+    <act_window id="action_demand_term"
+      name="Terms"
+      res_model="demand.term"
+      view_mode="tree,form" />
 
-        <!-- Menu Top -->
-        <menuitem id="menu_demand_management_top"
-          name="Demand" sequence="40"/>
+    <!-- Menu Top -->
+    <menuitem id="menu_demand_management_top"
+      name="Demand" sequence="40"/>
 
-          <!-- Menu Sidebar -->
-          <menuitem id="menu_periods_management" name="Periods Management"
-            parent="menu_demand_management_top" sequence="20"/>
+    <!-- Menu Sidebar -->
+    <menuitem id="menu_periods_management" name="Periods Management"
+      parent="menu_demand_management_top" sequence="30"/>
 
-            <!-- Menu Action -->
-            <menuitem id="menu_action_demand_term" name="Terms"
-              parent="menu_periods_management" action="action_demand_term" sequence="10"/>
+    <!-- Menu Action -->
+    <menuitem id="menu_action_demand_term" name="Terms"
+      parent="menu_periods_management" action="action_demand_term" sequence="10"/>
 
-              <menuitem id="menu_action_demand_period" name="Periods"
-                parent="menu_periods_management" action="action_demand_period" sequence="20"/>
+    <menuitem id="menu_action_demand_period" name="Periods"
+      parent="menu_periods_management" action="action_demand_period" sequence="20"/>
 
-                <!-- Term -->
-                <record id="demand_term_search_view" model="ir.ui.view">
-                  <field name="name">demand.term.search</field>
-                  <field name="model">demand.term</field>
-                  <field name="arch" type="xml">
-                    <search string="Search Term">
-                      <field name="name" filter_domain="['|', ('name','ilike',self)]" string="Term"/>
-                      <filter string="Open" name="draft" domain="[('state','=','draft')]" icon="terp-camera_test"/>
-                      <filter string="Closed" domain="[('state','=','done')]" icon="terp-dialog-close"/>
-                      <field name="state"/>
-                      <group expand="0" string="Group By">
-                        <filter string="Status" context="{'group_by': 'state'}" icon="terp-stock_effects-object-colorize"/>
+    <!-- Term -->
+    <record id="demand_term_search_view" model="ir.ui.view">
+      <field name="name">demand.term.search</field>
+      <field name="model">demand.term</field>
+      <field name="arch" type="xml">
+        <search string="Search Term">
+          <field name="name" filter_domain="['|', ('name','ilike',self)]" string="Term"/>
+          <filter string="Open" name="draft" domain="[('state','=','draft')]" icon="terp-camera_test"/>
+          <filter string="Closed" domain="[('state','=','done')]" icon="terp-dialog-close"/>
+          <field name="state"/>
+          <group expand="0" string="Group By">
+            <filter string="Status" context="{'group_by': 'state'}" icon="terp-stock_effects-object-colorize"/>
+          </group>
+        </search>
+      </field>
+    </record>
+
+    <record id="demand_term_form_view" model="ir.ui.view">
+      <field name="name">demand.term.form</field>
+      <field name="model">demand.term</field>
+      <field name="arch" type="xml">
+        <form string="Term">
+          <header>
+            <button name="action_draft" type="object"
+              string="Re-Open Term" states="done"/>
+             <!--  <button name="create_period" states="draft" string="Create Periods" type="object" />
+              <button name="delete_period" states="draft" string="Delete Periods" type="object" /> -->
+              <button name="action_done" type="object"
+                string="Close Term" states="draft" class="oe_highlight"/>
+                <field name="state" widget="statusbar" nolabel="1"/>
+              </header>
+              <sheet>
+                <div class="oe_title">
+                  <label for="name" class="oe_edit_only"/>
+                  <h1><field name="name" placeholder="Name of term..."/></h1>
+                </div>
+                <div class="oe_right oe_button_box" name="buttons" groups="base.group_user">
+                  <button class="oe_inline oe_stat_button" states="draft"
+                    type="object" string="Create Periods"
+                    name="create_period"
+                    icon="fa-calendar">
+                  </button>
+                   <button class="oe_inline oe_stat_button" states="draft" 
+                    type="object" string="Delete Periods"
+                    name="delete_period" 
+                    icon="fa-trash"/>
+                  <!-- <field  name="period_count" string="Periods" widget="statinfo" /> -->
+                </div>
+                <group>
+                  <group>
+                    <label for="date_start" string="Duration"/>
+                    <div>
+                      <field name="date_start" class="oe_inline" nolabel="1"/> -
+                      <field name="date_end" nolabel="1" class="oe_inline"/>
+                    </div>
+                    <label for="num_cycle" string="Number of Cycles"/>
+                    <div>
+                      <field name="num_cycle" class="oe_inline" nolabel="1"/> 
+                      <field name="type_period" class="oe_inline" nolabel="1" />
+                    </div>                                       
+                  </group>
+                  <group>
+
+                  </group>                            
+                </group>
+                <group colspan="4" col="4" string="Periods">
+                  <field name="period_ids" colspan="4" nolabel="1"/>
+                </group>
+              </sheet>
+            </form>
+          </field>
+        </record>
+
+        <record id="demand_term_tree_view" model="ir.ui.view">
+          <field name="name">demand.term.tree</field>
+          <field name="model">demand.term</field>
+          <field name="arch" type="xml">
+            <tree colors="blue:state == 'draft';gray:state == 'done' " string="Term">
+              <field name="name"/>
+              <field name="date_start"/>
+              <field name="date_end"/>
+              <field name="state"/>
+            </tree>
+          </field>
+        </record>
+        <!-- /Term -->
+
+        <!-- Period -->
+        <record id="demand_period_search_view" model="ir.ui.view">
+          <field name="name">demand.period.search</field>
+          <field name="model">demand.period</field>
+          <field name="arch" type="xml">
+            <search string="Search Period">
+              <field name="name" filter_domain="['|', ('name','ilike',self)]" string="Term"/>
+              <filter string="Open" name="draft" domain="[('state','=','draft')]" icon="terp-camera_test"/>
+              <filter string="Closed" domain="[('state','=','done')]" icon="terp-dialog-close"/>
+              <field name="state"/>
+              <group expand="0" string="Group By">
+                <filter string="Status" context="{'group_by': 'state'}" icon="terp-stock_effects-object-colorize"/>
+              </group>/>
+            </search>
+          </field>
+        </record>
+
+        <record id="demand_period_form_view" model="ir.ui.view">
+          <field name="name">demand.period.form</field>
+          <field name="model">demand.period</field>
+          <field name="arch" type="xml">
+            <form string="Period">
+              <header>
+                <button name="action_draft" type="object"
+                  string="Re-Open Period" states="done"/>
+                  <button name="action_done" type="object"
+                    string="Close Period" states="draft"
+                    class="oe_highlight"/>
+                    <field name="state" widget="statusbar" nolabel="1"/>
+                  </header>
+
+                  <sheet>
+                    <div class="oe_title">
+                      <label for="name" class="oe_edit_only"/>
+                      <h1><field name="name" placeholder="Name of period..."/></h1>
+                    </div>
+
+                    <group>
+                      <group>
+                        <label for="date_start" string="Duration"/>
+                        <div>
+                          <field name="date_start" class="oe_inline" nolabel="1"/> -
+                          <field name="date_end" class="oe_inline" nolabel="1" />
+                        </div>
+                        <field name="term_id"/>        
                       </group>
-                    </search>
-                  </field>
-                </record>
+                      <group>
+                      </group>
+                    </group>
+                  </sheet>
+                </form>
+              </field>
+            </record>
 
-                <record id="demand_term_form_view" model="ir.ui.view">
-                  <field name="name">demand.term.form</field>
-                  <field name="model">demand.term</field>
-                  <field name="arch" type="xml">
-                    <form string="Term">
-                      <header>
-                        <button name="action_draft" type="object"
-                          string="Re-Open Term" states="done"/>
-                          <button name="create_period" states="draft" string="Create Periods" type="object" class="oe_highlight"/>
-                          <button name="action_done" type="object"
-                            string="Close Term" states="draft"
-                            class="oe_highlight"/>
-                            <field name="state" widget="statusbar" nolabel="1"/>
-                          </header>
-                          <group>
-                            <group>
-                              <field name="name"/>
-                              <label for="date_start" string="Duration"/>
-                              <div>
-                                <field name="date_start" class="oe_inline" nolabel="1"/> -
-                                <field name="date_end" nolabel="1" class="oe_inline"/>
-                              </div>
-                              <label for="num_cycle" string="Number of Cycles"/>
-                              <div>
-                                <field name="num_cycle" class="oe_inline" nolabel="1"/> 
-                                <field name="type_period" class="oe_inline" nolabel="1" />
-                              </div>                                       
-                            </group>
-                            <group>
-                                                      
-                            </group>                            
-                          </group>
-                          <group colspan="4" col="4" string="Periods">
-                            <field name="period_ids" colspan="4" nolabel="1"/>
-                          </group>
-                        </form>
-                      </field>
-                    </record>
+            <record id="demand_period_tree_view" model="ir.ui.view">
+              <field name="name">demand.period.tree</field>
+              <field name="model">demand.period</field>
+              <field name="arch" type="xml">
+                <tree colors="blue:state == 'draft';gray:state == 'done' " string="Period">
+                  <field name="name"/>
+                  <field name="term_id"/>
+                  <field name="date_start"/>
+                  <field name="date_end"/>
+                  <field name="state"/>
+                </tree>
+              </field>
+            </record>
+            <!-- /Period -->
 
-                    <record id="demand_term_tree_view" model="ir.ui.view">
-                      <field name="name">demand.term.tree</field>
-                      <field name="model">demand.term</field>
-                      <field name="arch" type="xml">
-                        <tree colors="blue:state == 'draft';gray:state == 'done' " string="Term">
-                          <field name="name"/>
-                          <field name="date_start"/>
-                          <field name="date_end"/>
-                          <field name="state"/>
-                        </tree>
-                      </field>
-                    </record>
-                    <!-- /Term -->
-
-                    <!-- Period -->
-                    <record id="demand_period_search_view" model="ir.ui.view">
-                      <field name="name">demand.period.search</field>
-                      <field name="model">demand.period</field>
-                      <field name="arch" type="xml">
-                        <search string="Search Period">
-                          <field name="name" filter_domain="['|', ('name','ilike',self)]" string="Term"/>
-                          <filter string="Open" name="draft" domain="[('state','=','draft')]" icon="terp-camera_test"/>
-                          <filter string="Closed" domain="[('state','=','done')]" icon="terp-dialog-close"/>
-                          <field name="state"/>
-                          <group expand="0" string="Group By">
-                            <filter string="Status" context="{'group_by': 'state'}" icon="terp-stock_effects-object-colorize"/>
-                          </group>/>
-                        </search>
-                      </field>
-                    </record>
-
-                    <record id="demand_period_form_view" model="ir.ui.view">
-                      <field name="name">demand.period.form</field>
-                      <field name="model">demand.period</field>
-                      <field name="arch" type="xml">
-                        <form string="Period">
-                          <header>
-                            <button name="action_draft" type="object"
-                              string="Re-Open Period" states="done"/>
-                              <button name="action_done" type="object"
-                                string="Close Period" states="draft"
-                                class="oe_highlight"/>
-                                <field name="state" widget="statusbar" nolabel="1"/>
-                              </header>
-                              <sheet>
-                                <group>
-                                  <group>
-                                    <field name="name"/>                                               
-                                  </group>
-                                  <group>
-                                    <field name="term_id"/> 
-                                  </group>
-                                </group>
-                                <group>
-                                  <label for="date_start" string="Duration"/>
-                                  <div>
-                                    <field name="date_start" class="oe_inline" nolabel="1"/> -
-                                    <field name="date_end" nolabel="1" class="oe_inline"/>
-                                  </div>
-                                </group>
-                              </sheet>
-                            </form>
-                          </field>
-                        </record>
-
-                        <record id="demand_period_tree_view" model="ir.ui.view">
-                          <field name="name">demand.period.tree</field>
-                          <field name="model">demand.period</field>
-                          <field name="arch" type="xml">
-                            <tree colors="blue:state == 'draft';gray:state == 'done' " string="Period" editable="bottom">
-                              <field name="name"/>
-                              <field name="term_id"/>
-                              <field name="date_start"/>
-                              <field name="date_end"/>
-                              <field name="state"/>
-                            </tree>
-                          </field>
-                        </record>
-                        <!-- /Period -->
-
-                      </data>
-                    </openerp>
+  </data>
+</openerp>

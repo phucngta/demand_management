@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<openerp>
+	<data>
+    <act_window id="action_demand_forecast"
+    	name="Forecast"
+    	res_model="demand.forecast"
+    	view_mode="tree,form,graph"
+    	view_type="form"/>
+
+	<act_window id="action_demand_history"
+		name="Sale History"
+		res_model="demand.history"
+		view_mode="tree,form"
+		view_type="form"/>
+
+	<!-- Menu Top -->
+	<menuitem id="menu_demand_management_top"
+		name="Demand" sequence="40"/>
+
+	<!-- Menu Sidebar -->
+	<menuitem id="menu_forecast_management" name="Forecasts Management"
+		parent="menu_demand_management_top" sequence="10"/>
+
+	<menuitem id="menu_action_demand_forecast" name="Forecasts"
+		parent="menu_forecast_management" sequence="10" action="action_demand_forecast"/>
+
+	<menuitem id="menu_action_demand_history" name="Sale History"
+		parent="menu_forecast_management" sequence="20" action="action_demand_history"/>
+
+		<!-- Forecast View -->
+		<!-- Forecast List view -->
+		<record id="demand_forecast_tree_view" model="ir.ui.view">
+	   	<field name="name">demand.forecast.tree</field>
+	   	<field name="model">demand.forecast</field>
+	   	<field name="type">tree</field>
+	   	<field name="arch" type="xml">
+	   		<tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' " string="Forecast">
+	   			<field name="name"/>
+	   			<field name="period_id"/>
+	   			<field name="term_id"/>
+	   			<field name="product_id"/>
+	   			<field name="forecast_method"/>
+	   			<field name="forecast_quantity"/>	
+	   			<field name="state"/>
+	   		</tree>
+	   	</field>
+	   </record>
+
+
+	   <!-- Forecast Form view -->
+	   <record id="demand_forecast_form_view" model="ir.ui.view"> 
+	   	<field name="name">demand.forecast.form</field>
+	   	<field name="model">demand.forecast</field>
+	   	<field name="type">form</field>
+	   	<field name="arch" type="xml">
+	   		<header>
+	   			<button name="action_draft" type="object"
+	   				string="Reset to draft"
+	   				states="open,done"/>
+   				<button name="action_open" type="object"
+   					string="Open" states="draft"
+   					class="oe_highlight"/>
+				<button name="action_done" type="object"
+					string="Mark as done" states="open"
+					class="oe_highlight"/>
+				<field name="state" widget="statusbar" nolabel="1"/>
+			</header> 
+			<form>
+				<sheet>
+					<div class="oe_right oe_button_box" name="buttons">
+                        <button class="oe_inline oe_stat_button" type="action"  name="" icon="fa-cogs">
+                            <div>MPS</div>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only"/>
+                        <h1><field name="name" placeholder="Name of forecast..."/></h1>
+                    </div>
+					<group name="group_top">
+						<group name="group left">
+							<field name="term_id" class="oe_inline"/>
+							<field name="period_id" class="oe_inline" />
+							<field name="forecast_method"/>
+						</group>
+
+						<group name="group right">
+							<field name="product_id"/>
+							<field name="product_uom"/>
+						</group>
+					</group>
+					<!-- <notebook colspan="4">
+			            <page string="Sale History"> -->
+			        <group colspan="4" col="4" string="Sale History">
+			        	<field name="history_ids" colspan="4" nolabel="1"/>
+                	</group>
+			           <!--  </page>
+			            <page string="Extra Info">
+			            </page>
+			        </notebook> -->
+					
+					<group class="oe_subtotal_footer">
+					    <field name="forecast_quantity" readonly="1"/>
+					</group>
+					<!-- <group class="oe_subtotal_footer">
+					    <field name="amount_untaxed"/>
+					    <field name="amount_tax"/>
+					    <field name="amount_total" class="oe_subtotal_footer_separator"/>
+					    <field name="residual" style="margin-top: 10px"/>
+					</group> -->
+				</sheet>
+			</form>
+		</field>
+		</record> 
+
+		<!--  Forecast Bar Graph View  -->
+		<record id="forecast_graph" model="ir.ui.view" >
+			<field name="name">forecast.graph</field>
+			<field name="model">demand.forecast</field>
+			<field name="type">graph</field>
+			<field name="arch" type="xml">
+				<graph name="forecast.graph" type="bar">
+					<field name="product_id"/>
+				</graph>
+			</field>
+		</record>
+		<!-- End Forecast View -->
+
+		<!-- Sale History View -->
+		<!-- Forecast List view -->
+		<record id="demand_history_tree_view" model="ir.ui.view">
+			<field name="name">demand.history.tree</field>
+			<field name="model">demand.history</field>
+			<field name="type">tree</field>
+			<field name="arch" type="xml">
+				<tree  colors="blue:state == 'draft'; gray:state == 'done' " editable="bottom" string="Sale History" >
+					<field name="period_id"/>
+					<field name="term_id"/>
+					<field name="total_sales"/>
+					<field name="forecast_id"/>
+					<field name="state"/>
+				</tree>
+			</field>
+		</record>
+
+		<!-- History Tree View -->
+		<record id="demand_history_form_view" model="ir.ui.view"> 
+			<field name="name">demand.history.form</field>
+			<field name="model">demand.history</field>
+			<field name="type">form</field>
+			<field name="arch" type="xml">
+			<header>
+				<button name="action_draft" type="object"
+                  string="Re-Open Period" states="done"/>
+                <button name="action_done" type="object"
+                  string="Close Period" states="draft"/>
+                <field name="state" widget="statusbar" nolabel="1"/>	
+			</header> 
+				<form>
+				<sheet>
+					<group name="group_top">
+					<group>
+						<field name="forecast_id"/>
+						<label for="period_id" string="Period"/>
+						<div>
+							<field name="period_id" class="oe_inline" nolabel="1"/> -
+							<field name="term_id" class="oe_inline" nolabel="1"/>
+						</div>
+					</group>
+					<group >
+						<field name="total_sales"/>
+					</group>
+					</group>
+				</sheet>
+				</form>
+			</field>
+		</record> 
+
+		<!--  History Bar Graph View  -->
+		<record id="history_graph" model="ir.ui.view" >
+			<field name="name">history.graph</field>
+			<field name="model">demand.history</field>
+			<field name="type">graph</field>
+			<field name="arch" type="xml">
+				<graph name="history.graph" type="bar">
+					<field name="total_sales"/>
+				</graph>
+			</field>
+		</record>
+		<!-- End Sale History View  -->
+	</data>
+	</openerp>
