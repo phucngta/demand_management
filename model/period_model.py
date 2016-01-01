@@ -50,6 +50,10 @@ class Term(models.Model):
     @api.one
     @api.depends('type_period','num_cycle')
     def create_period(self):
+        # Xoa period cu
+        self.period_ids.unlink()
+
+        # Tao period moi
         period_obj = self.env['demand.period']        
         ds = datetime.strptime(self.date_start, '%Y-%m-%d')
         
@@ -85,7 +89,7 @@ class Term(models.Model):
                     
         elif self.type_period == 'day':
             while ds.strftime('%Y-%m-%d') < self.date_end:
-                    de = ds + relativedelta(days = self.num_cycle-1)
+                    de = ds + relativedelta(days = self.num_cycle)
     
                     if de.strftime('%Y-%m-%d') > self.date_end:
                         de = datetime.strptime(self.date_end, '%Y-%m-%d')
@@ -96,7 +100,7 @@ class Term(models.Model):
                         'date_end': de.strftime('%Y-%m-%d'),
                         'term_id': self.id,
                     })
-                    ds = ds + relativedelta(days = self.num_cycle)
+                    ds = ds + relativedelta(days = self.num_cycle+1)
 
     # @api.one
     # def delete_period(self):
@@ -106,9 +110,9 @@ class Term(models.Model):
     #     '''%(self.id)
     #     self.env.cr.execute(sql)
 
-    @api.one
-    def delete_period(self):
-        self.period_ids.unlink()
+    # @api.one
+    # def delete_period(self):
+    #     self.period_ids.unlink()
         
 
 class Period(models.Model):

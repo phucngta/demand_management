@@ -3,7 +3,9 @@ Created on Dec 15, 2015
 
 @author: Nguyen Phuc
 '''
-from openerp import models, fields, api
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from openerp import models, fields, api, exceptions
 
 class forecast(models.Model):
     _name = 'demand.forecast'
@@ -55,18 +57,45 @@ class forecast(models.Model):
             'period_id': [('id', 'in', ids)]
             }   
         return res
+
+    @api.one
+    @api.depends('period_id','term_id')
+    def create_history(self):
+        # Xoa history cu
+        self.history_ids.unlink()
+
+        # Tao history moi
+        history_obj = self.env['demand.history']
+        ds = datetime.strptime(self.period_id.date_start, '%Y-%m-%d')
+        for pe in self.term_id.period_ids:
+            if pe.date_end < ds.strftime('%Y-%m-%d'):
+                history_obj.create({
+                    'period_id' : pe.id,
+                    'term_id' : self.term_id.id,
+                    'forecast_id' : self.id,
+                })
        
 class history (models.Model):
     _name = 'demand.history'
     _description = 'Forecast History Management'
 
-    forecast_id = fields.Many2one('demand.forecast', string='Forecast')
+    @api.one
+    @api.depends('demand', 'forecast')
+    def _get_error(self):
+        self.error = self.demand - self.forecast
+        self.absolute_error = abs(self.demand - self.forecast)
+
+    forecast_id = fields.Many2one('demand.forecast', string='Source', readonly=True)
 
     term_id = fields.Many2one('demand.term', string='Term', store=True, related="forecast_id.term_id", readonly=True)
     period_id= fields.Many2one('demand.period', string='Period', store=True, domain = "[('period_id.id','in','term_id.period_ids.mapped('id')')]", required=True)
-    total_sales = fields.Float('Total Sales', readonly=True)
 
-    state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, copy=False, default='draft')
+    demand = fields.Float('Demand')
+    forecast = fields.Float('Forecast')
+    error = fields.Float('Error', readonly=True, compute='_get_error', store=True)
+    absolute_error = fields.Float('Absolute Error', readonly=True, compute='_get_error', store=True)
+
+    state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, default='draft')
 
     @api.multi
     def action_draft(self):
