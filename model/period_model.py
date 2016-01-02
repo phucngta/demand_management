@@ -100,7 +100,7 @@ class Term(models.Model):
                         'date_end': de.strftime('%Y-%m-%d'),
                         'term_id': self.id,
                     })
-                    ds = ds + relativedelta(days = self.num_cycle+1)
+                    ds = ds + relativedelta(days = self.num_cycle + 1)
 
     # @api.one
     # def delete_period(self):
@@ -110,9 +110,9 @@ class Term(models.Model):
     #     '''%(self.id)
     #     self.env.cr.execute(sql)
 
-    # @api.one
-    # def delete_period(self):
-    #     self.period_ids.unlink()
+    @api.one
+    def delete_period(self):
+        self.period_ids.unlink()
         
 
 class Period(models.Model):
