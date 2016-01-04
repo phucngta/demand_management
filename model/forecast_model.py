@@ -18,11 +18,17 @@ class forecast(models.Model):
     product_uom = fields.Many2one('product.uom', string='Unit of Measure')
     history_ids = fields.One2many('demand.history', 'forecast_id', string='Sale History')
 
-    forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing'),('lte','Linear Trend Equation')], "Method" ,default='sma')
-    forecast_quantity = fields.Float(string='Forecast Quantity')
+    forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing')], "Method" ,default='sma')
+    interval = fields.Integer('Interval', required = True)
+    alpha = fields.Float('Alpha', required = True)
+    
+    sum_error = fields.Float(string='Sum error')
+    avg_demand = fields.Float(string='Average Demand')
+
     mad = fields.Float(string='MAD')
     mape = fields.Float(string='MAPE')
     track_signal = fields.Float(string='Tracking Signal')
+    forecast_quantity = fields.Float(string='Forecast Quantity')
 
     state = fields.Selection([
         ('draft', "Draft"),
@@ -63,6 +69,7 @@ class forecast(models.Model):
     def _sale_per_product(self, pe):
         so_obj = self.env['sale.order']
         sol_obj = self.env['sale.order.line']
+        self.avg_demand = 0
 
         # Kiem tra cac don hang ve san pham co ton tai
         sol_with_product = sol_obj.search([('product_id','=',self.product_id.id), ('order_id.date_order','>=', pe.date_start), ('order_id.date_order','<=', pe.date_end)])
@@ -79,9 +86,12 @@ class forecast(models.Model):
             #     self.env.cr.execute(sql)
             #     return self.env.cr.fetchone()
             # return 11
-            sum_quantity = 0;
+            sum_quantity = 0
+            n = 0
             for sol in sol_with_product:
-                sum_quantity = sum_quantity+ sol.product_uom_qty
+                n += 1
+                sum_quantity += sol.product_uom_qty
+            self.avg_demand = sum_quantity/n
             return sum_quantity
 
     @api.one

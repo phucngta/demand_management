@@ -71,7 +71,9 @@
                         <button class="oe_inline oe_stat_button" states="draft"
 		                    type="object" string="Get History" name="create_history" icon="fa-clock-o"/>
 	                    <button class="oe_inline oe_stat_button" states="draft" 
-	                    	type="object" string="Run Forecast" name="" icon="fa-cogs"/>
+	                    	 type="object" string="Run Forecast" name="" icon="fa-cogs"/>
+                    	 <button class="oe_inline oe_stat_button" states="open" 
+                    	 type="object" string="Schedule" name="" icon="fa-calendar"/>
                     </div>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
@@ -79,9 +81,11 @@
                     </div>
 					<group name="group_top">
 						<group name="group left">
-							<field name="term_id" class="oe_inline"/>
-							<field name="period_id" class="oe_inline" />
+							<field name="term_id"/>
+							<field name="period_id"/>
 							<field name="forecast_method"/>
+							<field name="interval" attrs="{'invisible':[('forecast_method', '!=', 'sma')]}" />
+							<field name="alpha" attrs="{'invisible':[('forecast_method', '!=', 'es')]}" />
 						</group>
 
 						<group name="group right">
@@ -98,19 +102,19 @@
 			            <page string="Extra Info">
 			            </page>
 			        </notebook> -->
-					
-					<group class="oe_subtotal_footer">
-					    <field name="mad" readonly="1"/>
-					    <field name="mape" readonly="1"/>
-					    <field name="track_signal" readonly="1"/>
-					    <field name="forecast_quantity" readonly="1" class="oe_subtotal_footer_separator"/>
+			        <group colspan="4" col="4">
+						<group>
+							<field name="avg_demand" readonly="1"/>
+
+						</group>
+						<group class="oe_subtotal_footer oe_right">
+							<field name="mad" readonly="1"/>
+						    <field name="mape" readonly="1"/>
+						    <field name="sum_error" readonly="1"/>
+						    <field name="track_signal" readonly="1"/>
+						    <field name="forecast_quantity" readonly="1" class="oe_subtotal_footer_separator"/>
+						</group>
 					</group>
-					<!-- <group class="oe_subtotal_footer">
-					    <field name="amount_untaxed"/>
-					    <field name="amount_tax"/>
-					    <field name="amount_total" class="oe_subtotal_footer_separator"/>
-					    <field name="residual" style="margin-top: 10px"/>
-					</group> -->
 				</sheet>
 			</form>
 		</field>
@@ -159,25 +163,27 @@
 			<field name="arch" type="xml">
 			<header>
 				<button name="action_draft" type="object"
-                  string="Re-Open Period" states="done"/>
+                  string="Re-Open History" states="done"/>
                 <button name="action_done" type="object"
-                  string="Close Period" states="draft"/>
+                  string="Close History" states="draft"/>
                 <field name="state" widget="statusbar" nolabel="1"/>	
 			</header> 
 				<form>
 				<sheet>
-					<group name="group_top">
-					<group>
-						<field name="forecast_id"/>
-						<label for="period_id" string="Period"/>
-						<div>
-							<field name="period_id" class="oe_inline" nolabel="1"/> -
-							<field name="term_id" class="oe_inline" nolabel="1"/>
-						</div>
-					</group>
+					<div class="oe_title">
+                      <label for="period_id" class="oe_edit_only" string="Sale History"/>
+                      <h1><field name="period_id" class="oe_inline" nolabel="1"/> - <field name="term_id" class="oe_inline" nolabel="1"/></h1>
+                    </div>
+					<group name="group_top"> <field name="forecast_id"/></group>
 					<group >
-						<field name="demand"/>
-					</group>
+						<group>
+							<field name="demand"/>
+							<field name="forecast"/>
+						</group>
+						<group >
+							<field name="error"/>
+							<field name="absolute_error"/>
+						</group>
 					</group>
 				</sheet>
 				</form>
