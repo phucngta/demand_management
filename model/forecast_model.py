@@ -10,6 +10,20 @@ class forecast(models.Model):
     _name = 'demand.forecast'
     _description = 'Forecast Projects Management'
 
+    @api.one
+    @api.depends('history_ids')
+    def _count_history(self):
+        history_lst = []
+        sum_demand = 0
+        for line in self.history_ids:
+            if line.id:
+                history_lst.append(line.id)
+                sum_demand += line.demand
+        
+        history_count = len(history_lst)
+        if history_count > 0:
+            self.avg_demand = sum_demand /history_count
+
     name = fields.Char('Forecast Name', required=True)
     term_id= fields.Many2one('demand.term', string='Term', store=True, required=True)
     period_id = fields.Many2one('demand.period', string='Period', required=True)
@@ -17,13 +31,14 @@ class forecast(models.Model):
     product_id = fields.Many2one('product.product',string="Product", required=True)
     product_uom = fields.Many2one('product.uom', string='Unit of Measure')
     history_ids = fields.One2many('demand.history', 'forecast_id', string='Sale History')
+    # history_count = fields.Integer(compute=_count_history, store=True)
 
     forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing')], "Method" ,default='sma')
     interval = fields.Integer('Interval', required = True)
     alpha = fields.Float('Alpha', required = True)
     
-    sum_error = fields.Float(string='Sum error')
-    avg_demand = fields.Float(string='Average Demand')
+    # sum_error = fields.Float(string='Sum error')
+    avg_demand = fields.Float(string='Average Demand', compute=_count_history, store=True)
 
     mad = fields.Float(string='MAD')
     mape = fields.Float(string='MAPE')
@@ -63,13 +78,52 @@ class forecast(models.Model):
             'period_id': [('id', 'in', ids)]
             }   
         return res
-    
+
+    @api.one
+    @api.depends('alpha')
+    def _forecast_by_exponentail_smoothing(self, alpha):
+        # Lay so phan tu lich su
+        history_obj = self.env['demand.history']
+        ids = self.history_ids.mapped('id')
+        number_lines = len(ids)
+
+        # Gan forecast dau tien
+        first_history = history_obj.browse([ids[0]])
+        forecast_value = first_history.demand
+        # demand = first_history.demand
+        first_history.write({'forecast': forecast_value})
+        sum_error = sum_ab_error = error = 0
+
+        # Tinh forecast trong tung sale history
+        i = 1
+        while i < number_lines :
+            forecast_value = forecast_value + alpha*error
+
+            history_line = history_obj.browse([ids[i]])
+            history_line.write({'forecast': forecast_value})
+
+            error = history_line.demand - forecast_value
+            sum_error += error
+            sum_ab_error += abs(error)
+            i += 1
+
+        # Tinh du bao va do sai lech
+        self.forecast_quantity = forecast_value + alpha*error
+        self.mad = sum_ab_error/number_lines
+        self.mape = self.mad/self.avg_demand
+        self.track_signal = sum_error/self.mad
+
+    @api.multi
+    @api.depends('forecast_method','interval', 'alpha')
+    def run_forecast(self):
+        if self.forecast_method == 'es':
+            self._forecast_by_exponentail_smoothing(self.alpha)
+
     @api.multi
     @api.depends('product_id')
     def _sale_per_product(self, pe):
         so_obj = self.env['sale.order']
         sol_obj = self.env['sale.order.line']
-        self.avg_demand = 0
 
         # Kiem tra cac don hang ve san pham co ton tai
         sol_with_product = sol_obj.search([('product_id','=',self.product_id.id), ('order_id.date_order','>=', pe.date_start), ('order_id.date_order','<=', pe.date_end)])
@@ -87,11 +141,8 @@ class forecast(models.Model):
             #     return self.env.cr.fetchone()
             # return 11
             sum_quantity = 0
-            n = 0
             for sol in sol_with_product:
-                n += 1
                 sum_quantity += sol.product_uom_qty
-            self.avg_demand = sum_quantity/n
             return sum_quantity
 
     @api.one
@@ -116,11 +167,11 @@ class history (models.Model):
     _name = 'demand.history'
     _description = 'Forecast History Management'
 
-    @api.one
-    @api.depends('demand', 'forecast')
-    def _get_error(self):
-        self.error = self.demand - self.forecast
-        self.absolute_error = abs(self.demand - self.forecast)
+    # @api.one
+    # @api.depends('demand', 'forecast')
+    # def _get_error(self):
+    #     self.error = self.demand - self.forecast
+    #     self.absolute_error = abs(self.demand - self.forecast)
 
     forecast_id = fields.Many2one('demand.forecast', string='Source', readonly=True)
 
@@ -129,8 +180,8 @@ class history (models.Model):
 
     demand = fields.Float('Demand')
     forecast = fields.Float('Forecast')
-    error = fields.Float('Error', readonly=True, compute='_get_error', store=True)
-    absolute_error = fields.Float('Absolute Error', readonly=True, compute='_get_error', store=True)
+    # error = fields.Float('Error', readonly=True, compute='_get_error', store=True)
+    # absolute_error = fields.Float('Absolute Error', readonly=True, compute='_get_error', store=True)
 
     state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, default='draft')
 

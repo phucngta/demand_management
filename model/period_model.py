@@ -3,6 +3,7 @@ Created on Dec 15, 2015
 
 @author: Nguyen Phuc
 '''
+
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from openerp import models, fields, api, exceptions
@@ -13,7 +14,7 @@ class Term(models.Model):
 
     @api.one
     @api.depends('period_ids')
-    def _get_period_count(self):
+    def _count_period(self):
         period_lst = []
         for line in self.period_ids:
             if line.id:
@@ -28,7 +29,7 @@ class Term(models.Model):
     type_period=fields.Selection([('day','day(s)'),('week','week(s)'),('month','month(s)')],default='day', states={'done':[('readonly',True)]})
     
     period_ids = fields.One2many('demand.period', 'term_id', string= 'Periods', states={'done':[('readonly',True)]})
-    period_count = fields.Integer(string="Period Count", compute=_get_period_count)
+    period_count = fields.Integer(compute=_count_period)
 
     state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, copy=False, default='draft')
     
