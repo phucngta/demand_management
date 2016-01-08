@@ -34,8 +34,8 @@ class forecast(models.Model):
     # history_count = fields.Integer(compute=_count_history, store=True)
 
     forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing')], "Method" ,default='sma')
-    interval = fields.Integer('Interval', required = True)
-    alpha = fields.Float('Alpha', required = True)
+    interval = fields.Integer('Interval', required = True, default=2)
+    alpha = fields.Float('Alpha', required = True, default=0.5)
     
     # sum_error = fields.Float(string='Sum error')
     avg_demand = fields.Float(string='Average Demand', compute=_count_history, store=True)
@@ -90,11 +90,10 @@ class forecast(models.Model):
         # Gan forecast dau tien
         first_history = history_obj.browse([ids[0]])
         forecast_value = first_history.demand
-        # demand = first_history.demand
         first_history.write({'forecast': forecast_value})
-        sum_error = sum_ab_error = error = 0
 
         # Tinh forecast trong tung sale history
+        sum_error = sum_ab_error = error = 0
         i = 1
         while i < number_lines :
             forecast_value = forecast_value + alpha*error
@@ -113,16 +112,66 @@ class forecast(models.Model):
         self.mape = self.mad/self.avg_demand
         self.track_signal = sum_error/self.mad
 
+    @api.one
+    @api.depends('interval')
+    def _forecast_by_simple_moving_average(self, interval):
+        # Lay so phan tu lich su
+        history_obj = self.env['demand.history']
+        ids = self.history_ids.mapped('id')
+        number_lines = len(ids)
+        
+        # Kiem tra interval co lon hon so luong lich su
+        if number_lines < interval:
+            return False
+
+        # Tinh forecast trong tung sale history
+        sum_error = sum_ab_error = error = 0
+        i = 0
+        while  i <= number_lines:
+            # Gan forecast dau tien
+            if i < interval:
+                history_obj.browse([ids[i]]).write({'forecast': 0})
+
+            else:
+                count_down = interval
+                sum_demand_interval = 0
+                index = i - 1
+
+                while count_down > 0:
+                    sum_demand_interval += history_obj.browse([ids[index]]).demand
+                    index -= 1
+                    count_down -= 1
+
+                # Gan gia tri du bao cho sale history va forecast project
+                if i == number_lines:
+                    self.forecast_quantity = sum_demand_interval/interval
+                else: 
+                    forecast_value = sum_demand_interval/interval
+                    history_obj.browse([ids[i]]).write({'forecast': forecast_value})
+
+                    error = history_obj.browse([ids[i]]).demand - forecast_value
+                    sum_error += error
+                    sum_ab_error += abs(error)
+
+            i += 1
+
+        # Tinh sai lech
+        self.mad = sum_ab_error/(number_lines - interval)
+        self.mape = self.mad/self.avg_demand
+        self.track_signal = sum_error/self.mad
+
     @api.multi
     @api.depends('forecast_method','interval', 'alpha')
     def run_forecast(self):
         if self.forecast_method == 'es':
             self._forecast_by_exponentail_smoothing(self.alpha)
+        elif  self.forecast_method == 'sma':
+            self._forecast_by_simple_moving_average(self.interval)
 
     @api.multi
     @api.depends('product_id')
     def _sale_per_product(self, pe):
-        so_obj = self.env['sale.order']
+        # so_obj = self.env['sale.order']
         sol_obj = self.env['sale.order.line']
 
         # Kiem tra cac don hang ve san pham co ton tai
