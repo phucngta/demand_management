@@ -25,25 +25,25 @@ class forecast(models.Model):
             self.avg_demand = sum_demand /history_count
 
     name = fields.Char('Forecast Name', required=True)
-    term_id= fields.Many2one('demand.term', string='Term', store=True, required=True)
-    period_id = fields.Many2one('demand.period', string='Period', required=True)
+    term_id= fields.Many2one('demand.term', string='Term', required=True, readonly=True, states={'draft': [('readonly',False)]})
+    period_id = fields.Many2one('demand.period', string='Period', required=True, readonly=True, states={'draft': [('readonly',False)]})
 
-    product_id = fields.Many2one('product.product',string="Product", required=True)
-    product_uom = fields.Many2one('product.uom', string='Unit of Measure')
-    history_ids = fields.One2many('demand.history', 'forecast_id', string='Sale History')
+    product_id = fields.Many2one('product.product',string="Product", required=True, readonly=True, states={'draft': [('readonly',False)]})
+    product_uom = fields.Many2one('product.uom', string='Unit of Measure', readonly=True, states={'draft': [('readonly',False)]})
+    history_ids = fields.One2many('demand.history', 'forecast_id', string='Sale History', readonly=True, states={'draft': [('readonly',False)]})
     # history_count = fields.Integer(compute=_count_history, store=True)
 
-    forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing')], "Method" ,default='sma')
-    interval = fields.Integer('Interval', required = True, default=2)
-    alpha = fields.Float('Alpha', required = True, default=0.5)
+    forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing')], "Method" ,default='sma', readonly=True, states={'draft': [('readonly',False)]})
+    interval = fields.Integer('Interval', required = True, default=2, readonly=True, states={'draft': [('readonly',False)]})
+    alpha = fields.Float('Alpha', required = True, default=0.5, readonly=True, states={'draft': [('readonly',False)]})
     
     # sum_error = fields.Float(string='Sum error')
-    avg_demand = fields.Float(string='Average Demand', compute=_count_history, store=True)
+    avg_demand = fields.Float(string='Average Demand', readonly=True, compute=_count_history, store=True)
 
-    mad = fields.Float(string='MAD')
-    mape = fields.Float(string='MAPE')
-    track_signal = fields.Float(string='Tracking Signal')
-    forecast_quantity = fields.Float(string='Forecast Quantity')
+    mad = fields.Float(string='MAD', readonly=True)
+    mape = fields.Float(string='MAPE', readonly=True)
+    track_signal = fields.Float(string='Tracking Signal', readonly=True)
+    forecast_quantity = fields.Float(string='Forecast Quantity', readonly=True)
 
     state = fields.Selection([
         ('draft', "Draft"),
@@ -67,6 +67,11 @@ class forecast(models.Model):
     def onchange_product_id(self):
         if self.product_id:
             self.product_uom = self.product_id.uom_id
+
+    @api.onchange('forecast_method')
+    def onchange_forecast_method(self):
+        if self.forecast_method:
+            self.forecast_quantity = self.mad = self.mape = self.track_signal = 0
 
     @api.onchange('term_id')
     def onchange_term_id(self):

@@ -72,8 +72,8 @@
 		                    type="object" string="Get History" name="create_history" icon="fa-clock-o"/>
 	                    <button class="oe_inline oe_stat_button" states="draft" 
 	                    	 type="object" string="Run Forecast" name="run_forecast" icon="fa-cogs"/>
-                    	 <button class="oe_inline oe_stat_button" states="open" 
-                    	 	 type="object" string="Planning" name="" icon="fa-pencil-square-o"/>
+                    	 <!-- <button class="oe_inline oe_stat_button" states="open" 
+                    	 	 type="object" string="Planning" name="" icon="fa-pencil-square-o"/> -->
                     </div>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>

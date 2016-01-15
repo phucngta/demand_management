@@ -4,8 +4,8 @@
     <!-- Action Window-->
     <act_window id="action_demand_mps"
       name="Master Procurement Schedule"
-      res_model="mps.mps"
-      view_mode="tree,form,graph" />
+      res_model="demand.mps"
+      view_mode="tree,form" />
 
     <!-- Menu Top -->
     <menuitem id="menu_demand_management_top"
@@ -21,76 +21,100 @@
 
           <!-- MPS -->
           <record id="view_tree_mps" model="ir.ui.view">   
-            <field name="name">Master Procurement Schedule</field>
-            <field name="model">mps.mps</field>
+            <field name="name">demand.mps.tree</field>
+            <field name="model">demand.mps</field>
             <field name="arch" type="xml">        
-             <tree>
-              <field name="id"/>
-              <field name="create_date"/>
-              <field name="MPS_name"/> 
-              <field name="MPS_period"/>
-              <field name="MPS_product"/>   
-              <field name="forecast_quantity"/>
-              <field name="MPS_quantity"/> 
-              <field name="MPS_stock"/>
+             <tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' " string="MPS">
+              <field name="name"/> 
+              <field name="period_id"/>
+              <field name="term_id"/>
+              <field name="product_id"/>
+              <field name="forecast_quantity"/>    
+              <field name="plan_quantity"/> 
+              <field name="state"/>  
             </tree>
           </field>
         </record>
 
         <record id="view_form_mps" model="ir.ui.view">
-          <field name="name">Master Procurement Schedule</field>
-          <field name="model">mps.mps</field>
+          <field name="name">demand.mps.form</field>
+          <field name="model">demand.mps</field>
           <field name="arch" type="xml">
             <form>
               <header>
-                <button name="getdata" type="object" string="Get Data"/>
-                <button name="calculate" type="object" string="Calculate Planning"/>
+                <button name="request_procurement" string="Create Procurement" 
+                  type="object"  states="open" class="oe_highlight"/>
                 <button name="action_draft" type="object"
                   string="Reset to draft"
                   states="open,close"/>
                   <button name="action_open" type="object"
                     string="Open" states="draft"
                     class="oe_highlight"/>
-                    <button name="action_close" type="object"
-                      string="Close" states="open"
-                      class="oe_highlight"/>
-                      <field name="state" widget="statusbar"/>
-                    </header>
-                    <sheet>
-                      <group>
-                        <group name="group_top" colspan="4" col="4">
-                          <field name="MPS_name" colspan="4"/>                       
-                          <field name="MPS_period"/>
-                          <field name="MPS_product" required="1"/> 
-                        </group>
-                        <group name="group_mid">
-                          <field name="MPS_stock" readonly="1"/> 
-                          <field name="MPS_incomeship" readonly="1"/> 
-                          <field name="MPS_order" readonly="1"/>
-                          <field name="forecast_quantity" readonly="1"/>
-                          <field name="MPS_calquantity" readonly="1"/>                
-                        </group>  
-                        <group name="group_left">
-                          <field name="MPS_quantity"/> 
-                        </group>                      
-                      </group>
-                    </sheet>
-                  </form>
-                </field>
-              </record>  
+                  <button name="action_close" type="object"
+                    string="Mark as done" states="open" />
+                  <field name="state" widget="statusbar"/>
+              </header>
 
-              <record id="view_graph_mps" model="ir.ui.view">   
-                <field name="name">MPS PROJECT</field>
-                <field name="model">mps.mps</field>
-                <field name="arch" type="xml">        
-                 <graph string="MPS.graph">
-                  <field name="id"/>
-                  <field name="MPS_stock"/>
-                  <field name="MPS_order"/>    
-                  <field name="MPS_incomeship"/> 
-                  <field name="forecast_quantity"/>
-                </graph>
-              </field>
-            </record>
-          </data>
-        </openerp>
+              <sheet>
+
+                <div class="oe_right oe_button_box" name="buttons">
+                      <button class="oe_inline oe_stat_button" string="Get Stock" type="object"
+                          name="get_stock" icon="fa-cubes" states="draft">
+                      </button>
+                </div>
+
+                <div class="oe_title">
+                    <label for="name" class="oe_edit_only"/>
+                    <h1><field name="name" placeholder="Name of schedule..."/></h1>
+                </div>
+
+                <group name="group_top">
+                  <group name="group_left">
+                    <field name="forecast_id" />
+                    <field name="term_id" attrs="{'readonly':[('forecast_id', '!=', False)]}"/>
+                    <field name="period_id" attrs="{'readonly':[('forecast_id', '!=', False)]}"/>
+                  </group>
+                  <group name="group_right">
+                    <field name="warehouse_id" />
+                    <field name="product_id" attrs="{'readonly':[('forecast_id', '!=', False)]}"/>
+                    <field name="product_uom" attrs="{'readonly':[('forecast_id', '!=', False)]}"/> 
+                  </group> 
+                </group>
+
+                <notebook colspan="4">
+                  <page string="Information">
+                    <group name="group_left">
+                      <field name="forecast_quantity" readonly="1"/>
+                    </group>
+                    <group name="group_right">
+                      
+                    </group> 
+                  </page>
+                </notebook>
+
+                <group>
+                    <field name="consult_quantity" readonly="1"/> 
+                    <field name="plan_quantity"/>
+                </group>
+
+              </sheet>
+
+            </form>
+          </field>
+        </record>  
+
+        <!-- <record id="view_graph_mps" model="ir.ui.view">   
+          <field name="name">MPS PROJECT</field>
+          <field name="model">demand.mps</field>
+          <field name="arch" type="xml">        
+           <graph string="MPS.graph">
+            <field name="qty_available"/>
+            <field name="MPS_order"/>    
+            <field name="MPS_incomeship"/> 
+            <field name="forecast_quantity"/>
+          </graph>
+        </field>
+      </record> -->
+
+    </data>
+  </openerp>

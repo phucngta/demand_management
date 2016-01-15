@@ -2,7 +2,7 @@
 {
     'name' : 'Demand Management',
     'author':'SCM/ERP team',
-    'description':'Chương trình hỗ trợ dự báo và ra quyết định',
+    'description':'',
     'version':'1.0',
     'category':'Forecast,MPS',
     "application": True,
