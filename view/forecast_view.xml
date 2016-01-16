@@ -68,12 +68,15 @@
 			<form>
 				<sheet>
 					<div class="oe_right oe_button_box" name="buttons">
-                        <button class="oe_inline oe_stat_button" states="draft"
-		                    type="object" string="Get History" name="create_history" icon="fa-clock-o"/>
-	                    <button class="oe_inline oe_stat_button" states="draft" 
-	                    	 type="object" string="Run Forecast" name="run_forecast" icon="fa-cogs"/>
-                    	 <!-- <button class="oe_inline oe_stat_button" states="open" 
-                    	 	 type="object" string="Planning" name="" icon="fa-pencil-square-o"/> -->
+						<div>
+	                        <button class="oe_inline oe_stat_button" states="draft"
+			                    type="object" string="Get History" name="create_history" icon="fa-clock-o"/>
+		                    <button class="oe_inline oe_stat_button" states="draft" 
+		                    	 type="object" string="Run Forecast" name="run_forecast" icon="fa-cogs"/>
+		                </div>
+		                <div>
+                    	 	<button class="oe_inline oe_stat_button" type="object" string="Show Graph" name="show_graph_forecast" icon="fa-line-chart"/>
+                    	</div>
                     </div>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
@@ -93,15 +96,11 @@
 							<field name="product_uom"/>
 						</group>
 					</group>
-					<!-- <notebook colspan="4">
-			            <page string="Sale History"> -->
+					
 			        <group colspan="4" col="4" string="Sale History">
 			        	<field name="history_ids" colspan="4" nolabel="1"/>
                 	</group>
-			           <!--  </page>
-			            <page string="Extra Info">
-			            </page>
-			        </notebook> -->
+			           
 			        <group colspan="4" col="4">
 						<group>
 							<field name="avg_demand" readonly="1"/>
@@ -126,9 +125,7 @@
 			<field name="type">graph</field>
 			<field name="arch" type="xml">
 				<graph name="forecast.graph" type="bar">
-					
-					<field name="period_id" type="row"/>
-					<field name="forecast_quantity" type="measure"/>
+					<field name="history_ids"/>
 				</graph>
 			</field>
 		</record> -->
@@ -186,16 +183,18 @@
 		</record> 
 
 		<!--  History Bar Graph View  -->
-		<!-- <record id="history_graph" model="ir.ui.view" >
+		<record id="history_graph" model="ir.ui.view" >
 			<field name="name">history.graph</field>
 			<field name="model">demand.history</field>
 			<field name="type">graph</field>
 			<field name="arch" type="xml">
-				<graph name="history.graph" type="bar">
-					<field name="demand"/>
+				<graph name="history.graph" type="line">
+					<field name="period_id" type="row"/>
+	        			<field name="forecast_id" type="col"/>
+						<field name="forecast" type="measure"/>
 				</graph>
 			</field>
-		</record> -->
+		</record>
 		<!-- End Sale History View  -->
 	</data>
 	</openerp>

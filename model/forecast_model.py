@@ -182,18 +182,6 @@ class forecast(models.Model):
         # Kiem tra cac don hang ve san pham co ton tai
         sol_with_product = sol_obj.search([('product_id','=',self.product_id.id), ('order_id.date_order','>=', pe.date_start), ('order_id.date_order','<=', pe.date_end)])
         if sol_with_product:
-            # Kiem tra ngay sale order nam trong period
-            # so_in_period = so_obj.search([('date_order','>=',pe.date_start),('date_order','<=',pe.date_end)])
-            # if so_in_period:
-            #     # sql = '''SELECT sum(sol.product_uom_qty) 
-            #     #     FROM sale_order_line AS sol LEFT JOIN sale_order AS so ON (so.id = sol.order_id)
-            #     #     WHERE (sol.id IN %s) AND (so.id IN %s) AND (so.state NOT IN (\'draft\',\'cancel\'))'''
-            #     sql = '''SELECT sum(sol.product_uom_qty) 
-            #         FROM sale_order_line AS sol LEFT JOIN sale_order AS so ON (so.id = sol.order_id)
-            #         WHERE (sol.product_id = %s) AND (so.date_order >= %s) AND (so.date_order <= %s) AND (so.state NOT IN (\'draft\',\'cancel\'))''' % (self.product_id.id, datetime.strptime(pe.date_start, '%Y-%m-%d'), datetime.strptime(pe.date_end, '%Y-%m-%d'))
-            #     self.env.cr.execute(sql)
-            #     return self.env.cr.fetchone()
-            # return 11
             sum_quantity = 0
             for sol in sol_with_product:
                 sum_quantity += sol.product_uom_qty
@@ -204,6 +192,20 @@ class forecast(models.Model):
     def create_history(self):
         # Xoa history cu
         self.history_ids.unlink()
+
+        # Tao Temporate Demand
+        forecast_obj = self.env['demand.forecast']
+        if forecast_obj.search([('name','=','Demand '+self.name)]).exists():
+            tmp_demand = forecast_obj.search([('name','=','Demand '+self.name)])
+            tmp_demand.history_ids.unlink()
+        else: 
+            tmp_demand = forecast_obj.create({
+                'name' : 'Demand '+self.name,
+                'term_id' : self.term_id.id,
+                'period_id' : self.period_id.id,
+                'product_id' : self.product_id.id,
+                'product_uom' : self.product_uom.id,
+            })
 
         # Tao lich su
         history_obj = self.env['demand.history']
@@ -216,6 +218,36 @@ class forecast(models.Model):
                     'forecast_id' : self.id,
                     'demand' : self._sale_per_product(pe),
                 })
+                history_obj.create({
+                    'period_id' : pe.id,
+                    'term_id' : self.term_id.id,
+                    'forecast_id' : tmp_demand.id,
+                    'forecast' : self._sale_per_product(pe),
+                })
+
+    @api.multi
+    def show_graph_forecast(self):
+        history_list = []
+
+        forecast_obj = self.env['demand.forecast']
+        tmp_demand = forecast_obj.search([('name','=','Demand '+self.name)])
+        if tmp_demand:
+            for line in tmp_demand.history_ids:
+                if line.id:
+                    history_list.append(line.id)
+
+        for line in self.history_ids:
+            if line.id:
+                history_list.append(line.id)
+
+        return {
+            'view_mode': 'graph',
+            'res_model': 'demand.history',
+            'res_ids': history_list,
+            'domain': [('id', 'in', history_list)],
+            'type': 'ir.actions.act_window',
+            'target': 'new',
+            }
 
 class history (models.Model):
     _name = 'demand.history'
