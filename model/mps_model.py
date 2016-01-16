@@ -3,24 +3,29 @@ from openerp import models, fields, api
 
 class mps(models.Model):
     _name = 'demand.mps'
+    _description = 'Planning Production'
 
-    name = fields.Char('Schedule Name', required=True)
+    name = fields.Char('Planning Name', required=True)
 
     forecast_id = fields.Many2one('demand.forecast', string = 'Forecast name', domain=[('state','=','open')], readonly=True, states={'draft': [('readonly',False)]} )
-    forecast_quantity = fields.Float('Forecasting quantity', readonly=True, states={'draft': [('readonly',False)]})
+    forecast_quantity = fields.Float('Forecasting quantity', readonly=True)
 
-    term_id= fields.Many2one('demand.term', string='Term', required=True, readonly=True, states={'draft': [('readonly',False)]})
-    period_id = fields.Many2one('demand.period', string='Period', required=True, readonly=True, states={'draft': [('readonly',False)]})
+    term_id= fields.Many2one('demand.term', string='Term', readonly=True, related="forecast_id.term_id")
+    period_id = fields.Many2one('demand.period', string='Period', readonly=True, related="forecast_id.period_id")
 
-    product_id = fields.Many2one('product.product',string="Product", required=True, readonly=True, states={'draft': [('readonly',False)]})
-    product_uom = fields.Many2one('product.uom', string='Unit of Measure', required=True, readonly=True, states={'draft': [('readonly',False)]})
+    product_id = fields.Many2one('product.product',string="Product", readonly=True, related="forecast_id.product_id")
+    product_uom = fields.Many2one('product.uom', string='Unit of Measure', readonly=True, related="forecast_id.product_uom")
 
-    warehouse_id = fields.Many2one('stock.warehouse', string="Warehouse", required=True, readonly=True, states={'draft': [('readonly',False)]})
-    qty_available = fields.Float('Quantity On Hand', readonly=True)
-    incoming_shipment = fields.Float('Incoming Shipment', readonly=True)
+    qty_available = fields.Float('Stock On Hand', readonly=True)
+    virtual_available = fields.Float('Stock Accounting', readonly=True)
+    incoming_qty = fields.Float('Incoming Quantity', readonly=True)
+    outgoing_qty = fields.Float('Outging Quantity', readonly=True)
 
-    consult_quantity = fields.Char('Consultant Quantity', readonly=True)
-    plan_quantity = fields.Float('Planed Quantity', required=True, readonly=True, states={'draft': [('readonly',False)]})
+    product_min_qty = fields.Float('Minimum Quantity', readonly=True)
+    product_max_qty = fields.Float('Maximum Quantity', readonly=True)
+
+    consult_quantity = fields.Float('Consultant Quantity', readonly=True)
+    plan_quantity = fields.Float('Procurement Quantity', required=True, readonly=True, states={'draft': [('readonly',False)]})
     
     
     state = fields.Selection([
@@ -56,26 +61,25 @@ class mps(models.Model):
             }   
         return res
 
-    @api.onchange('forecast_id')
-    def _onchange_forecast(self):
-        self.forecast_quantity = self.forecast_id.forecast_quantity
-        self.term_id = self.forecast_id.term_id
-        self.period_id = self.forecast_id.period_id
-        self.product_id = self.forecast_id.product_id
-        self.product_uom = self.forecast_id.product_uom
-
     @api.multi
     @api.depends('product_id')
-    def get_stock(self, pe):
-        self.stock_on_hand = self.product_id.qty_available
-        
-        # quant_obj = self.env['stock.quant']
-        # quant_with_product = quant_obj.search([('product_id','=',self.product_id.id)])
-        # if quant_with_product:
-        #     sum_stock = 0
-        #     for stock in quant_with_product:
-        #         sum_stock += stock.qty
-        #     self.stock_on_hand = sum_stock
+    def calculate_plan(self):
+        if self.product_id:
+            for op in self.product_id.orderpoint_ids:
+                self.product_min_qty = op.product_min_qty
+                self.product_max_qty = op.product_max_qty
+
+            self.forecast_quantity = self.forecast_id.forecast_quantity
+
+            self.qty_available = self.product_id.qty_available
+            self.virtual_available = self.product_id.virtual_available
+            self.incoming_qty = self.product_id.incoming_qty
+            self.outgoing_qty = self.product_id.outgoing_qty
+
+            consult_quantity = self.forecast_quantity - self.virtual_available
+            if consult_quantity < self.product_min_qty:
+                self.consult_quantity = self.product_min_qty
+            else: self.consult_quantity = consult_quantity
 
     @api.multi
     def request_procurement(self):
@@ -84,7 +88,6 @@ class mps(models.Model):
                       'uom_id': self.product_id.uom_id.id,
                       'date_planned': self.period_id.date_start,
                       'qty': self.plan_quantity,
-                      'warehouse_id': self.warehouse_id.id
                       }
         res_id = self.env['make.procurement'].create(value_dict)
         return {'view_type': 'form',

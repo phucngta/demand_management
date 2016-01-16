@@ -2,7 +2,7 @@
 <openerp>
 	<data>
     <act_window id="action_demand_forecast"
-    	name="Forecast"
+    	name="Forecasts"
     	res_model="demand.forecast"
     	view_mode="tree,form"
     	view_type="form"/>

@@ -8,7 +8,7 @@ from openerp import models, fields, api
 
 class forecast(models.Model):
     _name = 'demand.forecast'
-    _description = 'Forecast Projects Management'
+    _description = 'Forecast Demand'
 
     @api.one
     @api.depends('history_ids')
@@ -29,7 +29,7 @@ class forecast(models.Model):
     period_id = fields.Many2one('demand.period', string='Period', required=True, readonly=True, states={'draft': [('readonly',False)]})
 
     product_id = fields.Many2one('product.product',string="Product", required=True, readonly=True, states={'draft': [('readonly',False)]})
-    product_uom = fields.Many2one('product.uom', string='Unit of Measure', readonly=True, states={'draft': [('readonly',False)]})
+    product_uom = fields.Many2one('product.uom', string='Unit of Measure', required=True, readonly=True, states={'draft': [('readonly',False)]})
     history_ids = fields.One2many('demand.history', 'forecast_id', string='Sale History', readonly=True, states={'draft': [('readonly',False)]})
     # history_count = fields.Integer(compute=_count_history, store=True)
 
@@ -219,7 +219,7 @@ class forecast(models.Model):
 
 class history (models.Model):
     _name = 'demand.history'
-    _description = 'Forecast History Management'
+    _description = 'Sale History'
 
     # @api.one
     # @api.depends('demand', 'forecast')
