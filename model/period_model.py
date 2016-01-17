@@ -10,7 +10,6 @@ from openerp import models, fields, api, exceptions
 
 class Term(models.Model):
     _name = 'demand.term'
-    _description = 'Demand term'
 
     @api.one
     @api.depends('period_ids')
@@ -118,8 +117,7 @@ class Term(models.Model):
 
 class Period(models.Model):
     _name = 'demand.period'
-    _description = 'Demand period'
-    _order = 'date_start, id' 
+    
     name = fields.Char('Period Name', required=True)
     date_start= fields.Date('Start of Period', required=True, states={'done':[('readonly',True)]})
     date_end= fields.Date('End of Period', required=True, states={'done':[('readonly',True)]})

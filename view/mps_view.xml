@@ -70,20 +70,20 @@
 
                 <group>
                   <group>
-                    <field name="forecast_id" />
+                    <field name="forecast_lines" />
                   </group>
                   <group></group>
                 </group>
 
                 <group>
                   <group name="group_left">
-                    <field name="term_id" attrs="{'readonly':['|',('forecast_id', '!=', False),('state','!=', 'draft')]}"/>
-                    <field name="period_id" attrs="{'readonly':['|',('forecast_id', '!=', False),('state','!=', 'draft')]}"/>
+                    <field name="term_id" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/>
+                    <field name="period_id" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/>
                     <field name="plan_quantity"/>
                   </group>
                   <group name="group_right">
-                    <field name="product_id" attrs="{'readonly':['|',('forecast_id', '!=', False),('state','!=', 'draft')]}"/>
-                    <field name="product_uom" attrs="{'readonly':['|',('forecast_id', '!=', False),('state','!=', 'draft')]}"/> 
+                    <field name="product_id" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/>
+                    <field name="product_uom" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/> 
                   </group> 
                 </group>
                     

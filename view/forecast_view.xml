@@ -7,9 +7,9 @@
     	view_mode="tree,form"
     	view_type="form"/>
 
-	<act_window id="action_demand_history"
-		name="Sale History"
-		res_model="demand.history"
+	<act_window id="action_demand_forecast_line"
+		name="Forecast Lines"
+		res_model="demand.forecast.line"
 		view_mode="tree,form"
 		view_type="form"/>
 
@@ -24,8 +24,8 @@
 	<menuitem id="menu_action_demand_forecast" name="Forecasts"
 		parent="menu_forecast_management" sequence="10" action="action_demand_forecast"/>
 
-	<menuitem id="menu_action_demand_history" name="Sale History"
-		parent="menu_forecast_management" sequence="20" action="action_demand_history"/>
+	<menuitem id="menu_action_demand_forecast_line" name="Forecast Lines"
+		parent="menu_forecast_management" sequence="20" action="action_demand_forecast_line"/>
 
 		<!-- Forecast View -->
 		<!-- Forecast List view -->
@@ -40,7 +40,6 @@
 	   			<field name="term_id"/>
 	   			<field name="product_id"/>
 	   			<field name="forecast_method"/>
-	   			<field name="forecast_quantity"/>	
 	   			<field name="state"/>
 	   		</tree>
 	   	</field>
@@ -70,7 +69,7 @@
 					<div class="oe_right oe_button_box" name="buttons">
 						<div>
 	                        <button class="oe_inline oe_stat_button" states="draft"
-			                    type="object" string="Get History" name="create_history" icon="fa-clock-o"/>
+			                    type="object" string="Get Demand" name="create_forecast_lines" icon="fa-clock-o"/>
 		                    <button class="oe_inline oe_stat_button" states="draft" 
 		                    	 type="object" string="Run Forecast" name="run_forecast" icon="fa-cogs"/>
 		                </div>
@@ -97,8 +96,8 @@
 						</group>
 					</group>
 					
-			        <group colspan="4" col="4" string="Sale History">
-			        	<field name="history_ids" colspan="4" nolabel="1"/>
+			        <group colspan="4" col="4" string="Forecast Lines">
+			        	<field name="forecast_lines" colspan="4" nolabel="1"/>
                 	</group>
 			           
 			        <group colspan="4" col="4">
@@ -110,7 +109,6 @@
 							<field name="mad" readonly="1"/>
 						    <field name="mape" readonly="1"/>
 						    <field name="track_signal" readonly="1"/>
-						    <field name="forecast_quantity" readonly="1" class="oe_subtotal_footer_separator"/>
 						</group>
 					</group>
 				</sheet>
@@ -125,76 +123,80 @@
 			<field name="type">graph</field>
 			<field name="arch" type="xml">
 				<graph name="forecast.graph" type="bar">
-					<field name="history_ids"/>
+					<field name="forecast_lines"/>
 				</graph>
 			</field>
 		</record> -->
 		<!-- End Forecast View -->
 
-		<!-- Sale History View -->
-		<!-- Forecast List view -->
-		<record id="demand_history_tree_view" model="ir.ui.view">
-			<field name="name">demand.history.tree</field>
-			<field name="model">demand.history</field>
+		<!-- Forecast Line View -->
+		<!-- Forecast Line List view -->
+		<record id="demand_forecast_line_tree_view" model="ir.ui.view">
+			<field name="name">demand.forecast.line.tree</field>
+			<field name="model">demand.forecast.line</field>
 			<field name="type">tree</field>
 			<field name="arch" type="xml">
-				<tree  colors="blue:state == 'draft'; gray:state == 'done' " editable="bottom" string="Sale History" >
-					<field name="period_id"/>
+				<tree  colors="blue:state == 'draft'; gray:state == 'done' " editable="bottom">
+					<field name="name" string="Name"/>
 					<field name="demand"/>
 					<field name="forecast"/>
 					<field name="forecast_id"/>
 					<field name="term_id" invisible="1"/>
+					<field name="period_id" invisible="1"/>
 					<field name="state"/>
 				</tree>
 			</field>
 		</record>
 
-		<!-- History Tree View -->
-		<record id="demand_history_form_view" model="ir.ui.view"> 
-			<field name="name">demand.history.form</field>
-			<field name="model">demand.history</field>
+		<!-- Forecast Line Tree View -->
+		<record id="demand_forecast_line_form_view" model="ir.ui.view"> 
+			<field name="name">demand.forecast.line.form</field>
+			<field name="model">demand.forecast.line</field>
 			<field name="type">form</field>
 			<field name="arch" type="xml">
 			<header>
 				<button name="action_draft" type="object"
-                  string="Re-Open History" states="done"/>
+                  string="Re-Open" states="done"/>
                 <button name="action_done" type="object"
-                  string="Close History" states="draft"/>
+                  string="Close" states="draft"/>
                 <field name="state" widget="statusbar" nolabel="1"/>	
 			</header> 
 				<form>
 				<sheet>
 					<div class="oe_title">
-                      <label for="period_id" class="oe_edit_only" string="Sale History"/>
-                      <h1><field name="period_id" class="oe_inline" nolabel="1"/> - <field name="term_id" class="oe_inline" nolabel="1"/></h1>
+                      <label for="name" class="oe_edit_only" string="Forecast Line"/>
+                      <h1><field name="name" class="oe_inline"/></h1>
                     </div>
 					<group name="group_top"> <field name="forecast_id"/></group>
 					<group >
+						<group >
+							<field name="term_id"/>
+							<field name="period_id"/>
+						</group>
 						<group>
 							<field name="demand"/>
 							<field name="forecast"/>
 						</group>
-						<group >
-						</group>
+						
 					</group>
 				</sheet>
 				</form>
 			</field>
 		</record> 
 
-		<!--  History Bar Graph View  -->
-		<record id="history_graph" model="ir.ui.view" >
-			<field name="name">history.graph</field>
-			<field name="model">demand.history</field>
+		<!--  Forecast Line Graph View  -->
+		<record id="forecast_line_graph" model="ir.ui.view" >
+			<field name="name">forecast_line.graph</field>
+			<field name="model">demand.forecast.line</field>
 			<field name="type">graph</field>
 			<field name="arch" type="xml">
-				<graph name="history.graph" type="line">
+				<graph name="forecast_line.graph" type="line">
 					<field name="period_id" type="row"/>
 	        			<field name="forecast_id" type="col"/>
 						<field name="forecast" type="measure"/>
 				</graph>
 			</field>
 		</record>
-		<!-- End Sale History View  -->
+		<!-- End Forecast Line View  -->
 	</data>
 	</openerp>

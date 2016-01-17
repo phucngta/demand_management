@@ -8,42 +8,48 @@ from openerp import models, fields, api
 
 class forecast(models.Model):
     _name = 'demand.forecast'
-    _description = 'Forecast Demand'
 
     @api.one
-    @api.depends('history_ids')
-    def _count_history(self):
-        history_lst = []
+    @api.depends('forecast_lines')
+    def _count_forecast_lines(self):
+        forecast_line_lst = []
         sum_demand = 0
-        for line in self.history_ids:
+        for line in self.forecast_lines:
             if line.id:
-                history_lst.append(line.id)
+                forecast_line_lst.append(line.id)
                 sum_demand += line.demand
         
-        history_count = len(history_lst)
-        if history_count > 0:
-            self.avg_demand = sum_demand /history_count
+        forecast_line_count = len(forecast_line_lst)
+        if forecast_line_count > 0:
+            self.avg_demand = sum_demand /forecast_line_count
+
+    # @api.multi
+    # def _generate_name_forecast(self):
+    #     forecast_obj = self.env['demand.forecast']
+    #     generate_id = 0
+    #     for line in forecast_obj.browse([]):
+    #         if line.id:
+    #             generate_id = line.id + 1
+
+    #     return "FC0"+ str(generate_id)
 
     name = fields.Char('Forecast Name', required=True)
     term_id= fields.Many2one('demand.term', string='Term', required=True, readonly=True, states={'draft': [('readonly',False)]})
-    period_id = fields.Many2one('demand.period', string='Period', required=True, readonly=True, states={'draft': [('readonly',False)]})
+    period_id = fields.Many2one('demand.period', string=' End Period', required=True, readonly=True, states={'draft': [('readonly',False)]})
 
     product_id = fields.Many2one('product.product',string="Product", required=True, readonly=True, states={'draft': [('readonly',False)]})
     product_uom = fields.Many2one('product.uom', string='Unit of Measure', required=True, readonly=True, states={'draft': [('readonly',False)]})
-    history_ids = fields.One2many('demand.history', 'forecast_id', string='Sale History', readonly=True, states={'draft': [('readonly',False)]})
-    # history_count = fields.Integer(compute=_count_history, store=True)
+    forecast_lines = fields.One2many('demand.forecast.line', 'forecast_id', string='Forecast Line', readonly=True, states={'draft': [('readonly',False)]})
 
     forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing')], "Method" ,default='sma', readonly=True, states={'draft': [('readonly',False)]})
     interval = fields.Integer('Interval', required = True, default=2, readonly=True, states={'draft': [('readonly',False)]})
     alpha = fields.Float('Alpha', required = True, default=0.5, readonly=True, states={'draft': [('readonly',False)]})
     
-    # sum_error = fields.Float(string='Sum error')
-    avg_demand = fields.Float(string='Average Demand', readonly=True, compute=_count_history, store=True)
+    avg_demand = fields.Float(string='Average Demand', readonly=True, compute=_count_forecast_lines, store=True)
 
     mad = fields.Float(string='MAD', readonly=True)
     mape = fields.Float(string='MAPE', readonly=True)
     track_signal = fields.Float(string='Tracking Signal', readonly=True)
-    forecast_quantity = fields.Float(string='Forecast Quantity', readonly=True)
 
     state = fields.Selection([
         ('draft', "Draft"),
@@ -71,7 +77,7 @@ class forecast(models.Model):
     @api.onchange('forecast_method')
     def onchange_forecast_method(self):
         if self.forecast_method:
-            self.forecast_quantity = self.mad = self.mape = self.track_signal = 0
+            self.mad = self.mape = self.track_signal = 0
 
     @api.onchange('term_id')
     def onchange_term_id(self):
@@ -88,14 +94,14 @@ class forecast(models.Model):
     @api.depends('alpha')
     def _forecast_by_exponentail_smoothing(self, alpha):
         # Lay so phan tu lich su
-        history_obj = self.env['demand.history']
-        ids = self.history_ids.mapped('id')
+        forecast_line_obj = self.env['demand.forecast.line']
+        ids = self.forecast_lines.mapped('id')
         number_lines = len(ids)
 
         # Gan forecast dau tien
-        first_history = history_obj.browse([ids[0]])
-        forecast_value = first_history.demand
-        first_history.write({'forecast': forecast_value})
+        first_forecast_line = forecast_line_obj.browse([ids[0]])
+        forecast_value = first_forecast_line.demand
+        first_forecast_line.write({'forecast': forecast_value})
 
         # Tinh forecast trong tung sale history
         sum_error = sum_ab_error = error = 0
@@ -103,16 +109,15 @@ class forecast(models.Model):
         while i < number_lines :
             forecast_value = forecast_value + alpha*error
 
-            history_line = history_obj.browse([ids[i]])
-            history_line.write({'forecast': forecast_value})
+            forecast_line = forecast_line_obj.browse([ids[i]])
+            forecast_line.write({'forecast': forecast_value})
 
-            error = history_line.demand - forecast_value
+            error = forecast_line.demand - forecast_value
             sum_error += error
             sum_ab_error += abs(error)
             i += 1
 
-        # Tinh du bao va do sai lech
-        self.forecast_quantity = forecast_value + alpha*error
+        # Tinh do sai lech
         self.mad = sum_ab_error/number_lines
         self.mape = self.mad/self.avg_demand
         self.track_signal = sum_error/self.mad
@@ -121,21 +126,21 @@ class forecast(models.Model):
     @api.depends('interval')
     def _forecast_by_simple_moving_average(self, interval):
         # Lay so phan tu lich su
-        history_obj = self.env['demand.history']
-        ids = self.history_ids.mapped('id')
+        forecast_line_obj = self.env['demand.forecast.line']
+        ids = self.forecast_lines.mapped('id')
         number_lines = len(ids)
         
         # Kiem tra interval co lon hon so luong lich su
         if number_lines < interval:
             return False
 
-        # Tinh forecast trong tung sale history
+        # Tinh gia tri forecast
         sum_error = sum_ab_error = error = 0
         i = 0
-        while  i <= number_lines:
+        while  i < number_lines:
             # Gan forecast dau tien
             if i < interval:
-                history_obj.browse([ids[i]]).write({'forecast': 0})
+                forecast_line_obj.browse([ids[i]]).write({'forecast': 0})
 
             else:
                 count_down = interval
@@ -143,20 +148,16 @@ class forecast(models.Model):
                 index = i - 1
 
                 while count_down > 0:
-                    sum_demand_interval += history_obj.browse([ids[index]]).demand
+                    sum_demand_interval += forecast_line_obj.browse([ids[index]]).demand
                     index -= 1
                     count_down -= 1
 
-                # Gan gia tri du bao cho sale history va forecast project
-                if i == number_lines:
-                    self.forecast_quantity = sum_demand_interval/interval
-                else: 
-                    forecast_value = sum_demand_interval/interval
-                    history_obj.browse([ids[i]]).write({'forecast': forecast_value})
+                forecast_value = sum_demand_interval/interval
+                forecast_line_obj.browse([ids[i]]).write({'forecast': forecast_value})
 
-                    error = history_obj.browse([ids[i]]).demand - forecast_value
-                    sum_error += error
-                    sum_ab_error += abs(error)
+                error = forecast_line_obj.browse([ids[i]]).demand - forecast_value
+                sum_error += error
+                sum_ab_error += abs(error)
 
             i += 1
 
@@ -189,15 +190,15 @@ class forecast(models.Model):
 
     @api.one
     @api.depends('period_id','term_id','product_id')
-    def create_history(self):
+    def create_forecast_lines(self):
         # Xoa history cu
-        self.history_ids.unlink()
+        self.forecast_lines.unlink()
 
         # Tao Temporate Demand
         forecast_obj = self.env['demand.forecast']
         if forecast_obj.search([('name','=','Demand '+self.name)]).exists():
             tmp_demand = forecast_obj.search([('name','=','Demand '+self.name)])
-            tmp_demand.history_ids.unlink()
+            tmp_demand.forecast_lines.unlink()
         else: 
             tmp_demand = forecast_obj.create({
                 'name' : 'Demand '+self.name,
@@ -205,60 +206,58 @@ class forecast(models.Model):
                 'period_id' : self.period_id.id,
                 'product_id' : self.product_id.id,
                 'product_uom' : self.product_uom.id,
+                'state' : 'done',
             })
 
         # Tao lich su
-        history_obj = self.env['demand.history']
-        ds = datetime.strptime(self.period_id.date_start, '%Y-%m-%d')
+        forecast_line_obj = self.env['demand.forecast.line']
+        de = datetime.strptime(self.period_id.date_end, '%Y-%m-%d')
         for pe in self.term_id.period_ids:
-            if pe.date_end < ds.strftime('%Y-%m-%d'):
-                history_obj.create({
+            if pe.date_end <= de.strftime('%Y-%m-%d'):
+                forecast_line_obj.create({
+                    'name' : 'FC '+pe.name,
                     'period_id' : pe.id,
                     'term_id' : self.term_id.id,
                     'forecast_id' : self.id,
                     'demand' : self._sale_per_product(pe),
                 })
-                history_obj.create({
+                forecast_line_obj.create({
+                    'name' : 'DM '+pe.name,
                     'period_id' : pe.id,
                     'term_id' : self.term_id.id,
                     'forecast_id' : tmp_demand.id,
                     'forecast' : self._sale_per_product(pe),
+                    'state' : 'done',
                 })
 
     @api.multi
     def show_graph_forecast(self):
-        history_list = []
+        forecast_line_lst = []
 
         forecast_obj = self.env['demand.forecast']
         tmp_demand = forecast_obj.search([('name','=','Demand '+self.name)])
         if tmp_demand:
-            for line in tmp_demand.history_ids:
+            for line in tmp_demand.forecast_lines:
                 if line.id:
-                    history_list.append(line.id)
+                    forecast_line_lst.append(line.id)
 
-        for line in self.history_ids:
+        for line in self.forecast_lines:
             if line.id:
-                history_list.append(line.id)
+                forecast_line_lst.append(line.id)
 
         return {
             'view_mode': 'graph',
-            'res_model': 'demand.history',
-            'res_ids': history_list,
-            'domain': [('id', 'in', history_list)],
+            'res_model': 'demand.forecast.line',
+            'res_ids': forecast_line_lst,
+            'domain': [('id', 'in', forecast_line_lst)],
             'type': 'ir.actions.act_window',
             'target': 'new',
             }
 
-class history (models.Model):
-    _name = 'demand.history'
-    _description = 'Sale History'
+class forecastLine (models.Model):
+    _name = 'demand.forecast.line'
 
-    # @api.one
-    # @api.depends('demand', 'forecast')
-    # def _get_error(self):
-    #     self.error = self.demand - self.forecast
-    #     self.absolute_error = abs(self.demand - self.forecast)
-
+    name = fields.Char('Forecast Line Name', required=True)
     forecast_id = fields.Many2one('demand.forecast', string='Source', readonly=True)
 
     term_id = fields.Many2one('demand.term', string='Term', store=True, related="forecast_id.term_id", readonly=True)
@@ -266,8 +265,6 @@ class history (models.Model):
 
     demand = fields.Float('Demand')
     forecast = fields.Float('Forecast')
-    # error = fields.Float('Error', readonly=True, compute='_get_error', store=True)
-    # absolute_error = fields.Float('Absolute Error', readonly=True, compute='_get_error', store=True)
 
     state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, default='draft')
 

@@ -3,18 +3,17 @@ from openerp import models, fields, api
 
 class mps(models.Model):
     _name = 'demand.mps'
-    _description = 'Planning Production'
 
     name = fields.Char('Planning Name', required=True)
 
-    forecast_id = fields.Many2one('demand.forecast', string = 'Forecast name', domain=[('state','=','open')], readonly=True, states={'draft': [('readonly',False)]} )
+    forecast_lines = fields.Many2one('demand.forecast.line', string = 'Forecast Line', domain=[('state','=','draft')], readonly=True, states={'draft': [('readonly',False)]} )
     forecast_quantity = fields.Float('Forecasting quantity', readonly=True)
 
-    term_id= fields.Many2one('demand.term', string='Term', readonly=True, related="forecast_id.term_id")
-    period_id = fields.Many2one('demand.period', string='Period', readonly=True, related="forecast_id.period_id")
+    term_id= fields.Many2one('demand.term', string='Term', readonly=True, related="forecast_lines.term_id")
+    period_id = fields.Many2one('demand.period', string='Period', readonly=True, related="forecast_lines.period_id")
 
-    product_id = fields.Many2one('product.product',string="Product", readonly=True, related="forecast_id.product_id")
-    product_uom = fields.Many2one('product.uom', string='Unit of Measure', readonly=True, related="forecast_id.product_uom")
+    product_id = fields.Many2one('product.product',string="Product", readonly=True, related="forecast_lines.forecast_id.product_id")
+    product_uom = fields.Many2one('product.uom', string='Unit of Measure', readonly=True, related="forecast_lines.forecast_id.product_uom")
 
     qty_available = fields.Float('Stock On Hand', readonly=True)
     virtual_available = fields.Float('Stock Accounting', readonly=True)
@@ -69,17 +68,16 @@ class mps(models.Model):
                 self.product_min_qty = op.product_min_qty
                 self.product_max_qty = op.product_max_qty
 
-            self.forecast_quantity = self.forecast_id.forecast_quantity
+            self.forecast_quantity = self.forecast_lines.forecast
 
             self.qty_available = self.product_id.qty_available
             self.virtual_available = self.product_id.virtual_available
             self.incoming_qty = self.product_id.incoming_qty
             self.outgoing_qty = self.product_id.outgoing_qty
 
-            consult_quantity = self.forecast_quantity - self.virtual_available
-            if consult_quantity < self.product_min_qty:
-                self.consult_quantity = self.product_min_qty
-            else: self.consult_quantity = consult_quantity
+            consult_quantity = self.forecast_quantity - self.virtual_available + self.product_min_qty
+            if consult_quantity > 0
+                self.consult_quantity = consult_quantity
 
     @api.multi
     def request_procurement(self):
@@ -98,10 +96,3 @@ class mps(models.Model):
                 'type': 'ir.actions.act_window',
                 'target': 'new',
                 }
-
-
-    # @api.multi    
-    # def getdata(self):
-    #     sql='''SELECT qty_available FROM product.product as pro WHERE self.MPS_product=pro.name'''
-    #     self.env.cr.execute(sql)    
-    #     self.MPS_stock = self.env.cr.fetchone()    
