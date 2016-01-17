@@ -6,7 +6,7 @@ class mps(models.Model):
 
     name = fields.Char('Planning Name', required=True)
 
-    forecast_lines = fields.Many2one('demand.forecast.line', string = 'Forecast Line', domain=[('state','=','draft')], readonly=True, states={'draft': [('readonly',False)]} )
+    forecast_lines = fields.Many2one('demand.forecast.line', string = 'Forecast Line', domain=[('state','=','open')], readonly=True, states={'draft': [('readonly',False)]} )
     forecast_quantity = fields.Float('Forecasting quantity', readonly=True)
 
     term_id= fields.Many2one('demand.term', string='Term', readonly=True, related="forecast_lines.term_id")

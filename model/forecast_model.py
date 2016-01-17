@@ -29,7 +29,7 @@ class forecast(models.Model):
 
     product_id = fields.Many2one('product.product',string="Product", required=True, readonly=True, states={'draft': [('readonly',False)]})
     product_uom = fields.Many2one('product.uom', string='Unit of Measure', required=True, readonly=True, states={'draft': [('readonly',False)]})
-    forecast_lines = fields.One2many('demand.forecast.line', 'forecast_id', string='Forecast Line', readonly=True, states={'draft': [('readonly',False)]})
+    forecast_lines = fields.One2many('demand.forecast.line', 'forecast_id', string='Forecast Line')
 
     forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing')], "Method" ,default='sma', readonly=True, states={'draft': [('readonly',False)]})
     interval = fields.Integer('Interval', required = True, default=2, readonly=True, states={'draft': [('readonly',False)]})
@@ -186,12 +186,12 @@ class forecast(models.Model):
 
         # Tao Temporate Demand
         forecast_obj = self.env['demand.forecast']
-        if forecast_obj.search([('name','=','Demand '+self.term_id.name)]).exists():
-            tmp_demand = forecast_obj.search([('name','=','Demand '+self.term_id.name)])
+        if forecast_obj.search([('name','=','Actual: '+self.name)]).exists():
+            tmp_demand = forecast_obj.search([('name','=','Actual: '+self.name)])
             tmp_demand.forecast_lines.unlink()
         else: 
             tmp_demand = forecast_obj.create({
-                'name' : 'Demand '+self.term_id.name,
+                'name' : 'Actual: '+self.name,
                 'term_id' : self.term_id.id,
                 'period_id' : self.period_id.id,
                 'product_id' : self.product_id.id,
@@ -225,7 +225,7 @@ class forecast(models.Model):
         forecast_line_lst = []
 
         forecast_obj = self.env['demand.forecast']
-        tmp_demand = forecast_obj.search([('name','=','Demand '+self.term_id.name)])
+        tmp_demand = forecast_obj.search([('name','=','Actual: '+self.name)])
         if tmp_demand:
             for line in tmp_demand.forecast_lines:
                 if line.id:
@@ -244,23 +244,31 @@ class forecast(models.Model):
             'target': 'new',
             }
 
-class forecastLine (models.Model):
+class ForecastLine (models.Model):
     _name = 'demand.forecast.line'
 
     name = fields.Char('Forecast Line Name', required=True)
-    forecast_id = fields.Many2one('demand.forecast', string='Source', readonly=True)
+    forecast_id = fields.Many2one('demand.forecast', string='Source', readonly=True, required=True, select=True)
 
     term_id = fields.Many2one('demand.term', string='Term', store=True, related="forecast_id.term_id", readonly=True)
-    period_id= fields.Many2one('demand.period', string='Period', store=True, domain = "[('period_id.id','in','term_id.period_ids.mapped('id')')]", required=True)
+    period_id= fields.Many2one('demand.period', string='Period', store=True, domain = "[('period_id.id','in','term_id.period_ids.mapped('id')')]", required=True, readonly=True)
 
     demand = fields.Float('Demand')
     forecast = fields.Float('Forecast')
 
-    state = fields.Selection([('draft','Draft'), ('done','Closed')], 'Status', readonly=True, default='draft')
+    state = fields.Selection([
+        ('draft', "Draft"),
+        ('open', "Open"),
+        ('done', "Done"),
+    ], 'Status', default='draft')
 
     @api.multi
     def action_draft(self):
         self.state = 'draft'
+
+    @api.multi
+    def action_open(self):
+        self.state = 'open'
 
     @api.multi
     def action_done(self):

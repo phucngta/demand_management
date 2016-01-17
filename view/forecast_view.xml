@@ -5,13 +5,15 @@
     	name="Forecasts"
     	res_model="demand.forecast"
     	view_mode="tree,form"
-    	view_type="form"/>
+    	view_type="form"
+    	context="{'search_default_forecast_filter': 1}"/>
 
 	<act_window id="action_demand_forecast_line"
 		name="Forecast Lines"
 		res_model="demand.forecast.line"
 		view_mode="tree,form"
-		view_type="form"/>
+		view_type="form"
+		context="{'search_default_forecast_line_filter': 1}"/>
 
 	<!-- Menu Top -->
 	<menuitem id="menu_demand_management_top"
@@ -28,13 +30,24 @@
 		parent="menu_forecast_management" sequence="20" action="action_demand_forecast_line"/>
 
 		<!-- Forecast View -->
+		<!-- Forecast Search View -->
+		<record id="demand_forecast_search_view" model="ir.ui.view">
+	      <field name="name">demand.forecast.search</field>
+	      <field name="model">demand.forecast</field>
+	      <field name="arch" type="xml">
+	        <search string="Search Forecast">
+	        	<filter string="Active" domain="[('state','!=','done')]" name="forecast_filter"/>
+	        </search>
+	      </field>
+	    </record>
+
 		<!-- Forecast List view -->
 		<record id="demand_forecast_tree_view" model="ir.ui.view">
 	   	<field name="name">demand.forecast.tree</field>
 	   	<field name="model">demand.forecast</field>
 	   	<field name="type">tree</field>
 	   	<field name="arch" type="xml">
-	   		<tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' " string="Forecast">
+	   		<tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' ">
 	   			<field name="name"/>
 	   			<field name="period_id"/>
 	   			<field name="term_id"/>
@@ -60,7 +73,7 @@
    					string="Open" states="draft"
    					class="oe_highlight"/>
 				<button name="action_done" type="object"
-					string="Mark as done" states="open"
+					string="Close" states="open"
 					class="oe_highlight"/>
 				<field name="state" widget="statusbar" nolabel="1"/>
 			</header> 
@@ -116,27 +129,26 @@
 		</field>
 		</record> 
 
-		<!--  Forecast Bar Graph View  -->
-		<!-- <record id="forecast_graph" model="ir.ui.view" >
-			<field name="name">forecast.graph</field>
-			<field name="model">demand.forecast</field>
-			<field name="type">graph</field>
-			<field name="arch" type="xml">
-				<graph name="forecast.graph" type="bar">
-					<field name="forecast_lines"/>
-				</graph>
-			</field>
-		</record> -->
-		<!-- End Forecast View -->
-
 		<!-- Forecast Line View -->
+
+		<!-- Forecast Search View -->
+		<record id="demand_forecast_line_search_view" model="ir.ui.view">
+	      <field name="name">demand.forecast.line.search</field>
+	      <field name="model">demand.forecast.line</field>
+	      <field name="arch" type="xml">
+	        <search string="Search Forecast Line">
+	        	<filter string="Active" domain="[('state','!=','done')]" name="forecast_line_filter"/>
+	        </search>
+	      </field>
+	    </record>
+
 		<!-- Forecast Line List view -->
 		<record id="demand_forecast_line_tree_view" model="ir.ui.view">
 			<field name="name">demand.forecast.line.tree</field>
 			<field name="model">demand.forecast.line</field>
 			<field name="type">tree</field>
 			<field name="arch" type="xml">
-				<tree  colors="blue:state == 'draft'; gray:state == 'done' " editable="bottom">
+				<tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' ">
 					<field name="name" string="Name"/>
 					<field name="demand"/>
 					<field name="forecast"/>
@@ -147,7 +159,7 @@
 					<button string="⇒ Plan Production"
                          name="plan_production"
                          type="object" icon="gtk-execute"
-                         attrs="{'readonly':[('state', '=', 'open')]}"/>
+                         attrs="{'invisible':[('state', '!=', 'open')]}"/>
 				</tree>
 			</field>
 		</record>
@@ -160,9 +172,14 @@
 			<field name="arch" type="xml">
 			<header>
 				<button name="action_draft" type="object"
-                  string="Re-Open" states="done"/>
-                <button name="action_done" type="object"
-                  string="Close" states="draft"/>
+   				 string="Reset to draft"
+   				 states="open,done"/>
+   				<button name="action_open" type="object"
+   				 string="Open" states="draft"
+   				 class="oe_highlight"/>
+				<button name="action_done" type="object"
+				 string="Close" states="open"
+				 class="oe_highlight"/>
                 <field name="state" widget="statusbar" nolabel="1"/>	
 			</header> 
 				<form>

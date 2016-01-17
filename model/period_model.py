@@ -30,7 +30,7 @@ class Term(models.Model):
     period_ids = fields.One2many('demand.period', 'term_id', string= 'Periods', states={'done':[('readonly',True)]})
     period_count = fields.Integer(compute=_count_period)
 
-    state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, copy=False, default='draft')
+    state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, default='draft')
     
 
     @api.one
@@ -124,7 +124,7 @@ class Period(models.Model):
 
     term_id = fields.Many2one('demand.term', string='Term', required=True, states={'done':[('readonly',True)]}, select=True)
 
-    state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, copy=False, default='draft')
+    state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, default='draft')
 
     @api.multi
     def action_draft(self):
