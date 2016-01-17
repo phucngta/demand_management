@@ -24,7 +24,7 @@ class mps(models.Model):
     product_max_qty = fields.Float('Maximum Quantity', readonly=True)
 
     consult_quantity = fields.Float('Consultant Quantity', readonly=True)
-    plan_quantity = fields.Float('Procurement Quantity', required=True, readonly=True, states={'draft': [('readonly',False)]})
+    plan_quantity = fields.Float('Procurement Quantity', required=True, default=0 ,readonly=True, states={'draft': [('readonly',False)]})
     
     
     state = fields.Selection([
@@ -76,7 +76,7 @@ class mps(models.Model):
             self.outgoing_qty = self.product_id.outgoing_qty
 
             consult_quantity = self.forecast_quantity - self.virtual_available + self.product_min_qty
-            if consult_quantity > 0
+            if consult_quantity > 0:
                 self.consult_quantity = consult_quantity
 
     @api.multi

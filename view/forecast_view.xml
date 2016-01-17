@@ -144,6 +144,10 @@
 					<field name="term_id" invisible="1"/>
 					<field name="period_id" invisible="1"/>
 					<field name="state"/>
+					<button string="⇒ Plan Production"
+                         name="plan_production"
+                         type="object" icon="gtk-execute"
+                         attrs="{'readonly':[('state', '=', 'open')]}"/>
 				</tree>
 			</field>
 		</record>

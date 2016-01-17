@@ -23,16 +23,6 @@ class forecast(models.Model):
         if forecast_line_count > 0:
             self.avg_demand = sum_demand /forecast_line_count
 
-    # @api.multi
-    # def _generate_name_forecast(self):
-    #     forecast_obj = self.env['demand.forecast']
-    #     generate_id = 0
-    #     for line in forecast_obj.browse([]):
-    #         if line.id:
-    #             generate_id = line.id + 1
-
-    #     return "FC0"+ str(generate_id)
-
     name = fields.Char('Forecast Name', required=True)
     term_id= fields.Many2one('demand.term', string='Term', required=True, readonly=True, states={'draft': [('readonly',False)]})
     period_id = fields.Many2one('demand.period', string=' End Period', required=True, readonly=True, states={'draft': [('readonly',False)]})
@@ -93,7 +83,7 @@ class forecast(models.Model):
     @api.one
     @api.depends('alpha')
     def _forecast_by_exponentail_smoothing(self, alpha):
-        # Lay so phan tu lich su
+        # Lay so phan tu forecast line
         forecast_line_obj = self.env['demand.forecast.line']
         ids = self.forecast_lines.mapped('id')
         number_lines = len(ids)
@@ -191,17 +181,17 @@ class forecast(models.Model):
     @api.one
     @api.depends('period_id','term_id','product_id')
     def create_forecast_lines(self):
-        # Xoa history cu
+        # Xoa forecast line cu
         self.forecast_lines.unlink()
 
         # Tao Temporate Demand
         forecast_obj = self.env['demand.forecast']
-        if forecast_obj.search([('name','=','Demand '+self.name)]).exists():
-            tmp_demand = forecast_obj.search([('name','=','Demand '+self.name)])
+        if forecast_obj.search([('name','=','Demand '+self.term_id.name)]).exists():
+            tmp_demand = forecast_obj.search([('name','=','Demand '+self.term_id.name)])
             tmp_demand.forecast_lines.unlink()
         else: 
             tmp_demand = forecast_obj.create({
-                'name' : 'Demand '+self.name,
+                'name' : 'Demand '+self.term_id.name,
                 'term_id' : self.term_id.id,
                 'period_id' : self.period_id.id,
                 'product_id' : self.product_id.id,
@@ -209,20 +199,20 @@ class forecast(models.Model):
                 'state' : 'done',
             })
 
-        # Tao lich su
+        # Tao forecast line 
         forecast_line_obj = self.env['demand.forecast.line']
         de = datetime.strptime(self.period_id.date_end, '%Y-%m-%d')
         for pe in self.term_id.period_ids:
             if pe.date_end <= de.strftime('%Y-%m-%d'):
                 forecast_line_obj.create({
-                    'name' : 'FC '+pe.name,
+                    'name' : 'Forecast '+pe.name,
                     'period_id' : pe.id,
                     'term_id' : self.term_id.id,
                     'forecast_id' : self.id,
                     'demand' : self._sale_per_product(pe),
                 })
                 forecast_line_obj.create({
-                    'name' : 'DM '+pe.name,
+                    'name' : 'Demand '+pe.name,
                     'period_id' : pe.id,
                     'term_id' : self.term_id.id,
                     'forecast_id' : tmp_demand.id,
@@ -235,7 +225,7 @@ class forecast(models.Model):
         forecast_line_lst = []
 
         forecast_obj = self.env['demand.forecast']
-        tmp_demand = forecast_obj.search([('name','=','Demand '+self.name)])
+        tmp_demand = forecast_obj.search([('name','=','Demand '+self.term_id.name)])
         if tmp_demand:
             for line in tmp_demand.forecast_lines:
                 if line.id:
@@ -266,7 +256,7 @@ class forecastLine (models.Model):
     demand = fields.Float('Demand')
     forecast = fields.Float('Forecast')
 
-    state = fields.Selection([('draft','Open'), ('done','Closed')], 'Status', readonly=True, default='draft')
+    state = fields.Selection([('draft','Draft'), ('done','Closed')], 'Status', readonly=True, default='draft')
 
     @api.multi
     def action_draft(self):
@@ -275,3 +265,21 @@ class forecastLine (models.Model):
     @api.multi
     def action_done(self):
         self.state = 'done'
+
+    @api.multi
+    def plan_production(self):
+        self.ensure_one()
+        value_dict = {
+                    'name' : 'Plan '+self.period_id.name,
+                    'forecast_lines': self.id,
+                    'term_id': self.term_id.id,
+                    'period_id': self.period_id,
+                    }
+        res_id = self.env['demand.mps'].create(value_dict)
+        return {
+                'view_mode': 'form',
+                'res_model': 'demand.mps',
+                'res_id': res_id.id,
+                'view_id': False,
+                'type': 'ir.actions.act_window',
+                }
