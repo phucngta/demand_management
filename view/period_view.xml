@@ -52,8 +52,7 @@
           <header>
             <button name="action_draft" type="object"
               string="Re-Open Term" states="done"/>
-             <!--  <button name="create_period" states="draft" string="Create Periods" type="object" />
-              <button name="delete_period" states="draft" string="Delete Periods" type="object" /> -->
+              <button name="delete_period" states="draft" string="Delete Periods" type="object" />
               <button name="action_done" type="object"
                 string="Close Term" states="draft" class="oe_highlight"/>
                 <field name="state" widget="statusbar" nolabel="1"/>
@@ -65,10 +64,9 @@
                 </div>
                 <div class="oe_right oe_button_box" name="buttons" groups="base.group_user">
                   <button class="oe_inline oe_stat_button" states="draft"
-                    type="object" string="Create Periods" name="create_period" icon="fa-calendar"/>
+                    type="object" string="Create Periods" name="create_period" icon="fa-calendar-check-o"/>
                   <button class="oe_inline oe_stat_button" states="draft" 
-                    type="object" string="Delete Periods" name="delete_period" icon="fa-trash"/>
-                  <!-- <field  name="period_count" string="Periods" widget="statinfo" /> -->
+                    type="object" string="Delete Periods" name="delete_period" icon="fa-calendar-times-o"/>
                 </div>
                 <group>
                   <group>

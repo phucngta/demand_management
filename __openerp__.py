@@ -9,7 +9,7 @@
     "auto_install": False,
     'data': [
         'view/period_view.xml',
-        'view/mps_view.xml',
+        'view/plan_view.xml',
         'view/forecast_view.xml'
     ]
 }

@@ -50,14 +50,10 @@ class forecast(models.Model):
     @api.multi
     def action_draft(self):
         self.state = 'draft'
-        for line in self.forecast_lines:
-            line.state = 'draft'
 
     @api.multi
     def action_open(self):
         self.state = 'open'
-        for line in self.forecast_lines:
-            line.state = 'open'
 
     @api.multi
     def action_done(self):
@@ -283,14 +279,15 @@ class ForecastLine (models.Model):
 
     name = fields.Char('Forecast Line Name', required=True)
     forecast_id = fields.Many2one('demand.forecast', string='Source', readonly=True, required=True)
-    planning_id = fields.Many2one('demand.planning', string='Plan', readonly=True)
+    planning_id = fields.Many2one('demand.planning', string='Source Plan', readonly=True)
+    planning_line_id = fields.Many2one('demand.planning.line', string='Plan', readonly=True)
 
     term_id = fields.Many2one('demand.term', string='Term', required=True, readonly=True)
     period_id= fields.Many2one('demand.period', string='Period', required=True, readonly=True)
     # domain = "[('period_id.id','in','term_id.period_ids.mapped('id')')]", 
 
-    demand_qty = fields.Float('Demand', readonly=True)
-    forecast_qty = fields.Float('Forecast', readonly=True)
+    demand_qty = fields.Float('Demand Quantity', readonly=True)
+    forecast_qty = fields.Float('Forecast Quantity', readonly=True)
 
     state = fields.Selection([
         ('draft', "Draft"),
@@ -313,13 +310,17 @@ class ForecastLine (models.Model):
     @api.multi
     def plan_production(self):
         self.ensure_one()
-        if self.planning_id:
-            res_id= self.env['demand.planning.line'].create({
+        plan_line_obj = self.env['demand.planning.line']
+
+        if plan_line_obj.search([('forecast_line_id','=',self.id)]).exists():
+            res_id = plan_obj.search([('forecast_line_id','=', self.id)])
+        else:
+            res_id = plan_line_obj.create({
                         'name' : 'Plan '+self.period_id.name,
                         'forecast_line_id': self.id,
                         'forecast_qty': self.forecast_qty,
-                        'term_id': self.term_id,
-                        'period_id': self.period_id,
+                        'term_id': self.term_id.id,
+                        'period_id': self.period_id.id,
                         'planning_id':self.planning_id.id,
                         'qty_available': self.planning_id.qty_available,
                         'virtual_available': self.planning_id.virtual_available,
@@ -328,3 +329,13 @@ class ForecastLine (models.Model):
                         'product_min_qty': self.planning_id.product_min_qty,
                         'product_max_qty': self.planning_id.product_max_qty,
                         })
+        self.state = 'open'
+        self.planning_line_id = res_id.id
+
+        return {
+            'view_mode': 'form',
+            'res_model': 'demand.planning',
+            'res_id': self.planning_id.id,
+            'view_id': False,
+            'type': 'ir.actions.act_window',
+            }
