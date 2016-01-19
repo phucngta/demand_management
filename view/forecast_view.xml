@@ -23,6 +23,7 @@
 	<menuitem id="menu_forecast_management" name="Forecasts Management"
 		parent="menu_demand_management_top" sequence="10"/>
 
+	<!-- Menu Action -->
 	<menuitem id="menu_action_demand_forecast" name="Forecasts"
 		parent="menu_forecast_management" sequence="10" action="action_demand_forecast"/>
 
@@ -48,7 +49,7 @@
 	   	<field name="type">tree</field>
 	   	<field name="arch" type="xml">
 	   		<tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' ">
-	   			<field name="name"/>
+	   			<field name="name" string="Name"/>
 	   			<field name="period_id"/>
 	   			<field name="term_id"/>
 	   			<field name="product_id"/>
@@ -81,14 +82,8 @@
 				<sheet>
 					<div class="oe_right oe_button_box" name="buttons">
 						<div>
-	                        <button class="oe_inline oe_stat_button" states="draft"
-			                    type="object" string="Get Demand" name="create_forecast_lines" icon="fa-clock-o"/>
-		                    <button class="oe_inline oe_stat_button" states="draft" 
-		                    	 type="object" string="Run Forecast" name="run_forecast" icon="fa-cogs"/>
+		                    <button class="oe_inline oe_stat_button" type="object" string="Show Graph" name="show_graph_forecast" icon="fa-line-chart"/>
 		                </div>
-		                <div>
-                    	 	<button class="oe_inline oe_stat_button" type="object" string="Show Graph" name="show_graph_forecast" icon="fa-line-chart"/>
-                    	</div>
                     </div>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
@@ -108,7 +103,16 @@
 							<field name="product_uom"/>
 						</group>
 					</group>
-					
+
+					<div class="oe_right oe_button_box">
+			        	<button class="oe_inline oe_stat_button" states="draft"
+                    	 type="object" string="Get Demand" name="create_forecast_lines" 
+                    	 icon="fa-clock-o"/>
+	                    <button class="oe_inline oe_stat_button" states="draft" 
+                    	 type="object" string="Run Forecast" name="run_forecast" icon="fa-cogs"/>
+                	 	<button class="oe_inline oe_stat_button" type="object" string="Make Plan" name="make_plan" icon="fa fa-tasks" states="open"/>
+					</div>
+
 			        <group colspan="4" col="4" string="Forecast Lines">
 			        	<field name="forecast_lines" colspan="4" nolabel="1"/>
                 	</group>
@@ -150,21 +154,19 @@
 			<field name="arch" type="xml">
 				<tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' ">
 					<field name="name" string="Name"/>
-					<field name="demand"/>
-					<field name="forecast"/>
-					<field name="forecast_id"/>
-					<field name="term_id" invisible="1"/>
-					<field name="period_id" invisible="1"/>
+					<field name="demand_qty"/>
+					<field name="forecast_qty"/>
+					<field name="planning_id" invisible="1"/>
 					<field name="state"/>
 					<button string="⇒ Plan Production"
                          name="plan_production"
                          type="object" icon="gtk-execute"
-                         attrs="{'invisible':[('state', '!=', 'open')]}"/>
+                         attrs="{'invisible':['|',('state', '!=', 'open'),'|',('planning_id','=',False)]}"/>
 				</tree>
 			</field>
 		</record>
 
-		<!-- Forecast Line Tree View -->
+		<!-- Forecast Line Form View -->
 		<record id="demand_forecast_line_form_view" model="ir.ui.view"> 
 			<field name="name">demand.forecast.line.form</field>
 			<field name="model">demand.forecast.line</field>
@@ -185,20 +187,24 @@
 				<form>
 				<sheet>
 					<div class="oe_title">
-                      <label for="name" class="oe_edit_only" string="Forecast Line"/>
+                      <label for="name" class="oe_edit_only" string="Name"/>
                       <h1><field name="name" class="oe_inline"/></h1>
                     </div>
-					<group name="group_top"> <field name="forecast_id"/></group>
-					<group >
+					<group> 
+						<group> <field name="forecast_id"/></group>
+						<group> 
+							<field name="planning_id"/>
+						</group>
+					</group>
+					<group>
 						<group >
 							<field name="term_id"/>
 							<field name="period_id"/>
 						</group>
 						<group>
-							<field name="demand"/>
-							<field name="forecast"/>
+							<field name="demand_qty"/>
+							<field name="forecast_qty"/>
 						</group>
-						
 					</group>
 				</sheet>
 				</form>
@@ -214,7 +220,7 @@
 				<graph name="forecast_line.graph" type="line">
 					<field name="period_id" type="row"/>
 	        			<field name="forecast_id" type="col"/>
-						<field name="forecast" type="measure"/>
+						<field name="forecast_qty" type="measure"/>
 				</graph>
 			</field>
 		</record>

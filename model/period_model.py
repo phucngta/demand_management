@@ -42,10 +42,14 @@ class Term(models.Model):
     @api.multi
     def action_draft(self):
         self.state = 'draft'
+        for line in self.period_ids:
+            line.state = 'draft'
 
     @api.multi
     def action_done(self):
         self.state = 'done'
+        for line in self.period_ids:
+            line.state = 'done'
     
     @api.one
     @api.depends('type_period','num_cycle')

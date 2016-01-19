@@ -100,7 +100,7 @@
           <field name="model">demand.term</field>
           <field name="arch" type="xml">
             <tree colors="blue:state == 'draft';gray:state == 'done' " string="Term">
-              <field name="name"/>
+              <field name="name" string="Name"/>
               <field name="date_start"/>
               <field name="date_end"/>
               <field name="state"/>
@@ -167,7 +167,7 @@
               <field name="model">demand.period</field>
               <field name="arch" type="xml">
                 <tree colors="blue:state == 'draft';gray:state == 'done' " string="Period">
-                  <field name="name"/>
+                  <field name="name" string="Name"/>
                   <field name="term_id"/>
                   <field name="date_start"/>
                   <field name="date_end"/>

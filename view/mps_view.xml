@@ -2,134 +2,186 @@
 <openerp>
   <data>
     <!-- Action Window-->
-    <act_window id="action_demand_mps"
-      name="Planning Production"
-      res_model="demand.mps"
-      view_mode="tree,form" />
+    <act_window id="action_demand_planning"
+      name="Planning"
+      res_model="demand.planning"
+      view_mode="tree,form"
+      view_type="form" />
 
-    <!-- Menu Top -->
-    <menuitem id="menu_demand_management_top"
-      name="Demand" sequence="40"/>
+    <act_window id="action_demand_planning_line"
+      name="Planning Lines"
+      res_model="demand.planning.line"
+      view_mode="tree,form"
+      view_type="form"/>
+
+      <!-- Menu Top -->
+      <menuitem id="menu_demand_management_top"
+        name="Demand" sequence="40"/>
 
       <!-- Menu Sidebar -->
-      <menuitem id="menu_mps_management" name="Plannings Management"
+      <menuitem id="menu_planning_management" name="Plannings Management"
         parent="menu_demand_management_top" sequence="20"/>
 
-        <!-- Menu Action -->
-            <menuitem id="menu_action_demand_mps" name="Plannings"
-              parent="menu_mps_management" action="action_demand_mps" sequence="10"/>
+      <!-- Menu Action -->
+      <menuitem id="menu_action_demand_planning" name="Plannings"
+        parent="menu_planning_management" action="action_demand_planning" sequence="10"/>
 
-          <!-- MPS -->
-          <record id="view_tree_mps" model="ir.ui.view">   
-            <field name="name">demand.mps.tree</field>
-            <field name="model">demand.mps</field>
-            <field name="arch" type="xml">        
-             <tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' " string="MPS">
-              <field name="name"/> 
-              <field name="period_id"/>
-              <field name="term_id"/>
-              <field name="product_id"/>
-              <field name="forecast_quantity"/>    
-              <field name="plan_quantity"/> 
-              <field name="state"/>  
-            </tree>
-          </field>
-        </record>
+      <menuitem id="menu_action_demand_planning_line" name="Planning Lines"
+        parent="menu_planning_management" sequence="20" action="action_demand_planning_line"/>
 
-        <record id="view_form_mps" model="ir.ui.view">
-          <field name="name">demand.mps.form</field>
-          <field name="model">demand.mps</field>
-          <field name="arch" type="xml">
-            <form>
-              <header>
-                <button name="request_procurement" string="Create Procurement" 
-                  type="object"  states="open" class="oe_highlight"/>
-                <button name="action_draft" type="object"
-                  string="Reset to draft"
-                  states="open,close"/>
-                  <button name="action_open" type="object"
-                    string="Open" states="draft"
-                    class="oe_highlight"/>
-                  <button name="action_close" type="object"
-                    string="Mark as done" states="open" />
-                  <field name="state" widget="statusbar"/>
-              </header>
-
-              <sheet>
-
-                <div class="oe_right oe_button_box" name="buttons">
-                      <button class="oe_inline oe_stat_button" string="Calculate Plan" type="object"
-                          name="calculate_plan" icon="fa-calculator" states="draft">
-                      </button>
-                </div>
-
-                <div class="oe_title">
-                    <label for="name" class="oe_edit_only"/>
-                    <h1><field name="name" placeholder="Name of planning..."/></h1>
-                </div>
-
-                <group>
-                  <group>
-                    <field name="forecast_lines" />
-                  </group>
-                  <group></group>
-                </group>
-
-                <group>
-                  <group name="group_left">
-                    <field name="term_id" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/>
-                    <field name="period_id" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/>
-                    <field name="plan_quantity"/>
-                  </group>
-                  <group name="group_right">
-                    <field name="product_id" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/>
-                    <field name="product_uom" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/> 
-                  </group> 
-                </group>
-                    
-                <notebook colspan="4">
-                  <page string="Information">
-                    <group string="Calculate Quantity">
-                      <group>
-                        <field name="forecast_quantity"/>
-                      </group>
-                      <group>
-                        <field name="consult_quantity" />
-                      </group>
-                    </group>
-
-                    <group >
-                      <group name="group_left" string="Current Stock">
-                        <field name="qty_available"/>
-                        <field name="incoming_qty"/>
-                        <field name="outgoing_qty"/>
-                        <field name="virtual_available"/>
-                      </group>
-                      <group name="group_right" string="Stock Rules">
-                        <field name="product_min_qty"/>
-                        <field name="product_max_qty"/>
-                      </group>
-                    </group> 
-                  </page>
-                </notebook>
-              </sheet>
-
-            </form>
-          </field>
-        </record>  
-
-        <!-- <record id="view_graph_mps" model="ir.ui.view">   
-          <field name="name">MPS PROJECT</field>
-          <field name="model">demand.mps</field>
-          <field name="arch" type="xml">        
-           <graph string="MPS.graph">
-            <field name="qty_available"/>
-            <field name="MPS_order"/>    
-            <field name="MPS_incomeship"/> 
-            <field name="forecast_quantity"/>
-          </graph>
+      <!-- Planning View -->
+      <!-- Planning List View -->
+      <record id="view_tree_mps" model="ir.ui.view">   
+        <field name="name">demand.planning.tree</field>
+        <field name="model">demand.planning</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">        
+          <tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' ">
+            <field name="name" string="Name"/> 
+            <field name="term_id"/>
+            <field name="product_id"/>
+            <field name="forecast_id"/>
+            <field name="state"/>  
+          </tree>
         </field>
-      </record> -->
+      </record>
 
-    </data>
-  </openerp>
+      <!-- Planning Form View -->
+      <record id="view_form_mps" model="ir.ui.view">
+        <field name="name">demand.planning.form</field>
+        <field name="model">demand.planning</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+          <form>
+            <header>
+              <button name="action_draft" type="object"
+                string="Reset to draft"
+                states="open,close"/>
+              <button name="action_open" type="object"
+                string="Open" states="draft"
+                class="oe_highlight"/>
+              <button name="action_close" type="object"
+                string="Close" states="open" />
+              <field name="state" widget="statusbar"/>
+            </header>
+
+            <sheet>
+              <div class="oe_title">
+                <label for="name" class="oe_edit_only"/>
+                <h1><field name="name" placeholder="Name of planning..."/></h1>
+              </div>
+
+              <group>
+                <group name="group_left">
+                    <field name="forecast_id" />
+                    <field name="term_id" />
+                    <field name="product_min_qty" />
+                    <field name="product_max_qty" />
+                </group>
+                <group name="group_right">
+                    <field name="product_id" />
+                    <field name="product_uom" />
+                </group>
+              </group>
+              <group string="Forecast Lines"><field name="forecast_lines" nolabel="1" /></group>
+              <group string="Planning Lines"><field name="planning_lines" nolabel="1" /></group>
+              <!-- <group>
+                <group>
+                  <field name="term_id" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/>
+                  <field name="period_id" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/>
+                </group>
+                <group>
+                  <field name="product_id" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/>
+                  <field name="product_uom" attrs="{'readonly':['|',('forecast_lines', '!=', False),('state','!=', 'draft')]}"/> 
+                </group> 
+              </group> -->
+
+              <!-- <notebook colspan="4">
+                <page string="Information">
+                  
+                </page>
+              </notebook> -->
+            </sheet>
+          </form>
+        </field>
+      </record>  
+
+      <!-- End Planning View -->
+
+      <!-- Planning Line View -->
+      <!-- Planning List View -->
+      <record id="demand_planning_line_tree_view" model="ir.ui.view">   
+        <field name="name">demand.planning.line.tree</field>
+        <field name="model">demand.planning.line</field>
+        <field name="type">tree</field>
+        <field name="arch" type="xml">        
+          <tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' " editable="bottom">
+            <field name="name" string="Name"/>
+            <field name="virtual_available" string="Stock"/>
+            <field name="consult_qty" string="Consultant"/>
+            <field name="plan_qty" string="Procurement"/> 
+            <field name="state"/>
+            <!-- <button string="⇒ Request Procurement"
+               name="request_procurement"
+               type="object" icon="gtk-execute"
+               attrs="{'invisible':[('plan_qty', '=', '0')]}"/> -->
+          </tree>
+        </field>
+      </record>
+
+      <!-- Planning Line Form View -->
+      <record id="demand_planning_line_form_view" model="ir.ui.view"> 
+        <field name="name">demand.planning.line.form</field>
+        <field name="model">demand.planning.line</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+        <header>
+            <button name="action_draft" type="object"
+             string="Reset to draft"
+             states="open,done"/>
+            <button name="action_open" type="object"
+             string="Open" states="draft"
+             class="oe_highlight"/>
+            <button name="action_done" type="object"
+             string="Close" states="open"
+             class="oe_highlight"/>
+            <field name="state" widget="statusbar" nolabel="1"/>  
+        </header> 
+          <form>
+          <sheet>
+            <div class="oe_title">
+                <label for="name" class="oe_edit_only" string="Name"/>
+                <h1><field name="name" class="oe_inline"/></h1>
+            </div>
+            <group> 
+                <group> 
+                    <field name="planning_id"/>
+                    <field name="consult_qty"/>
+                    <field name="plan_qty"/>
+                </group>
+                <group> 
+                    <field name="forecast_line_id"/>
+                    <field name="forecast_qty"/>
+                </group>
+            </group>
+            <group>
+                <group string="Stock Situation">
+                    <field name="qty_available"/>
+                    <field name="incoming_qty"/>
+                    <field name="outgoing_qty"/>
+                    <field name="virtual_available"/>
+                </group>
+                <group string="Stock Rule">
+                    <field name="product_min_qty"/>
+                    <field name="product_max_qty"/>
+                </group>
+            </group>
+          </sheet>
+          </form>
+        </field>
+      </record> 
+
+      <!-- End Planning Line View -->
+
+  </data>
+</openerp>

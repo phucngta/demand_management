@@ -17,19 +17,19 @@ class forecast(models.Model):
         for line in self.forecast_lines:
             if line.id:
                 forecast_line_lst.append(line.id)
-                sum_demand += line.demand
+                sum_demand += line.demand_qty
         
         forecast_line_count = len(forecast_line_lst)
         if forecast_line_count > 0:
             self.avg_demand = sum_demand /forecast_line_count
 
     name = fields.Char('Forecast Name', required=True)
-    term_id= fields.Many2one('demand.term', string='Term', required=True, readonly=True, states={'draft': [('readonly',False)]})
-    period_id = fields.Many2one('demand.period', string=' End Period', required=True, readonly=True, states={'draft': [('readonly',False)]})
+    term_id= fields.Many2one('demand.term', string='Term', required=True, readonly=True, states={'draft': [('readonly',False)]}, domain=[('state','=','draft')])
+    period_id = fields.Many2one('demand.period', string=' End Period', required=True, readonly=True, states={'draft': [('readonly',False)]}, domain=[('state','=','draft')])
 
     product_id = fields.Many2one('product.product',string="Product", required=True, readonly=True, states={'draft': [('readonly',False)]})
     product_uom = fields.Many2one('product.uom', string='Unit of Measure', required=True, readonly=True, states={'draft': [('readonly',False)]})
-    forecast_lines = fields.One2many('demand.forecast.line', 'forecast_id', string='Forecast Line')
+    forecast_lines = fields.One2many('demand.forecast.line', 'forecast_id', string='Forecast Line',readonly=True, states={'draft': [('readonly',False)]})
 
     forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing')], "Method" ,default='sma', readonly=True, states={'draft': [('readonly',False)]})
     interval = fields.Integer('Interval', required = True, default=2, readonly=True, states={'draft': [('readonly',False)]})
@@ -50,14 +50,20 @@ class forecast(models.Model):
     @api.multi
     def action_draft(self):
         self.state = 'draft'
+        for line in self.forecast_lines:
+            line.state = 'draft'
 
     @api.multi
     def action_open(self):
         self.state = 'open'
+        for line in self.forecast_lines:
+            line.state = 'open'
 
     @api.multi
     def action_done(self):
         self.state = 'done'
+        for line in self.forecast_lines:
+            line.state = 'done'
 
     @api.onchange('product_id')
     def onchange_product_id(self):
@@ -90,8 +96,8 @@ class forecast(models.Model):
 
         # Gan forecast dau tien
         first_forecast_line = forecast_line_obj.browse([ids[0]])
-        forecast_value = first_forecast_line.demand
-        first_forecast_line.write({'forecast': forecast_value})
+        forecast_value = first_forecast_line.demand_qty
+        first_forecast_line.write({'forecast_qty': forecast_value})
 
         # Tinh forecast trong tung sale history
         sum_error = sum_ab_error = error = 0
@@ -100,9 +106,9 @@ class forecast(models.Model):
             forecast_value = forecast_value + alpha*error
 
             forecast_line = forecast_line_obj.browse([ids[i]])
-            forecast_line.write({'forecast': forecast_value})
+            forecast_line.write({'forecast_qty': forecast_value})
 
-            error = forecast_line.demand - forecast_value
+            error = forecast_line.demand_qty - forecast_value
             sum_error += error
             sum_ab_error += abs(error)
             i += 1
@@ -130,7 +136,7 @@ class forecast(models.Model):
         while  i < number_lines:
             # Gan forecast dau tien
             if i < interval:
-                forecast_line_obj.browse([ids[i]]).write({'forecast': 0})
+                forecast_line_obj.browse([ids[i]]).write({'forecast_qty': 0})
 
             else:
                 count_down = interval
@@ -138,14 +144,14 @@ class forecast(models.Model):
                 index = i - 1
 
                 while count_down > 0:
-                    sum_demand_interval += forecast_line_obj.browse([ids[index]]).demand
+                    sum_demand_interval += forecast_line_obj.browse([ids[index]]).demand_qty
                     index -= 1
                     count_down -= 1
 
                 forecast_value = sum_demand_interval/interval
-                forecast_line_obj.browse([ids[i]]).write({'forecast': forecast_value})
+                forecast_line_obj.browse([ids[i]]).write({'forecast_qty': forecast_value})
 
-                error = forecast_line_obj.browse([ids[i]]).demand - forecast_value
+                error = forecast_line_obj.browse([ids[i]]).demand_qty - forecast_value
                 sum_error += error
                 sum_ab_error += abs(error)
 
@@ -209,14 +215,14 @@ class forecast(models.Model):
                     'period_id' : pe.id,
                     'term_id' : self.term_id.id,
                     'forecast_id' : self.id,
-                    'demand' : self._sale_per_product(pe),
+                    'demand_qty' : self._sale_per_product(pe),
                 })
                 forecast_line_obj.create({
                     'name' : 'Demand '+pe.name,
                     'period_id' : pe.id,
                     'term_id' : self.term_id.id,
                     'forecast_id' : tmp_demand.id,
-                    'forecast' : self._sale_per_product(pe),
+                    'forecast_qty' : self._sale_per_product(pe),
                     'state' : 'done',
                 })
 
@@ -244,17 +250,47 @@ class forecast(models.Model):
             'target': 'new',
             }
 
+    @api.multi
+    def make_plan(self):
+        self.ensure_one()
+
+        plan_obj = self.env['demand.planning']
+        if plan_obj.search([('forecast_id','=', self.id)]).exists():
+            res_id = plan_obj.search([('forecast_id','=', self.id)])
+        else:
+            value_dict = {
+                        'name' : 'Plan '+self.term_id.name,
+                        'forecast_id': self.id,
+                        'product_id': self.product_id.id,
+                        'product_uom': self.product_uom.id,
+                        'term_id': self.term_id.id,
+                        }
+            res_id = plan_obj.create(value_dict)
+
+        for line in self.forecast_lines:
+            line.planning_id = res_id.id
+
+        return {
+                'view_mode': 'form',
+                'res_model': 'demand.planning',
+                'res_id': res_id.id,
+                'view_id': False,
+                'type': 'ir.actions.act_window',
+                }
+
 class ForecastLine (models.Model):
     _name = 'demand.forecast.line'
 
     name = fields.Char('Forecast Line Name', required=True)
-    forecast_id = fields.Many2one('demand.forecast', string='Source', readonly=True, required=True, select=True)
+    forecast_id = fields.Many2one('demand.forecast', string='Source', readonly=True, required=True)
+    planning_id = fields.Many2one('demand.planning', string='Plan', readonly=True)
 
-    term_id = fields.Many2one('demand.term', string='Term', store=True, related="forecast_id.term_id", readonly=True)
-    period_id= fields.Many2one('demand.period', string='Period', store=True, domain = "[('period_id.id','in','term_id.period_ids.mapped('id')')]", required=True, readonly=True)
+    term_id = fields.Many2one('demand.term', string='Term', required=True, readonly=True)
+    period_id= fields.Many2one('demand.period', string='Period', required=True, readonly=True)
+    # domain = "[('period_id.id','in','term_id.period_ids.mapped('id')')]", 
 
-    demand = fields.Float('Demand')
-    forecast = fields.Float('Forecast')
+    demand_qty = fields.Float('Demand', readonly=True)
+    forecast_qty = fields.Float('Forecast', readonly=True)
 
     state = fields.Selection([
         ('draft', "Draft"),
@@ -277,17 +313,18 @@ class ForecastLine (models.Model):
     @api.multi
     def plan_production(self):
         self.ensure_one()
-        value_dict = {
-                    'name' : 'Plan '+self.period_id.name,
-                    'forecast_lines': self.id,
-                    'term_id': self.term_id.id,
-                    'period_id': self.period_id,
-                    }
-        res_id = self.env['demand.mps'].create(value_dict)
-        return {
-                'view_mode': 'form',
-                'res_model': 'demand.mps',
-                'res_id': res_id.id,
-                'view_id': False,
-                'type': 'ir.actions.act_window',
-                }
+        if self.planning_id:
+            res_id= self.env['demand.planning.line'].create({
+                        'name' : 'Plan '+self.period_id.name,
+                        'forecast_line_id': self.id,
+                        'forecast_qty': self.forecast_qty,
+                        'term_id': self.term_id,
+                        'period_id': self.period_id,
+                        'planning_id':self.planning_id.id,
+                        'qty_available': self.planning_id.qty_available,
+                        'virtual_available': self.planning_id.virtual_available,
+                        'incoming_qty': self.planning_id.incoming_qty,
+                        'outgoing_qty': self.planning_id.outgoing_qty,
+                        'product_min_qty': self.planning_id.product_min_qty,
+                        'product_max_qty': self.planning_id.product_max_qty,
+                        })
