@@ -82,6 +82,10 @@
 				<sheet>
 					<div class="oe_right oe_button_box" name="buttons">
 						<div>
+							<button class="oe_inline oe_stat_button" type="object" string="Make Plan" name="make_plan" icon="fa-cogs" states="open"/>
+							<button class="oe_inline oe_stat_button" states="draft"
+	                    	 type="object" string="Get Demand" name="create_forecast_lines" 
+	                    	 icon="fa-clock-o"/>
 		                    <button class="oe_inline oe_stat_button" type="object" string="Show Graph" name="show_graph_forecast" icon="fa-line-chart"/>
 		                </div>
                     </div>
@@ -93,9 +97,13 @@
 						<group name="group left">
 							<field name="term_id"/>
 							<field name="period_id"/>
-							<field name="forecast_method"/>
-							<field name="interval" attrs="{'invisible':[('forecast_method', '!=', 'sma')]}" />
-							<field name="alpha" attrs="{'invisible':[('forecast_method', '!=', 'es')]}" />
+							<field name="forecast_method" class="oe_inline"/>
+							<field name="interval" attrs="{'invisible':[('forecast_method', '!=', 'sma')]}"/>
+							<field name="alpha" attrs="{'invisible':[('forecast_method', '!=', 'es')]}"/>
+							<label for="run_forecast"/>
+							<div>
+								<button string="Run Forecast" states="draft" type="object" name="run_forecast" icon="gtk-execute" class="oe_inline"/>
+							</div>
 						</group>
 
 						<group name="group right">
@@ -103,15 +111,6 @@
 							<field name="product_uom"/>
 						</group>
 					</group>
-
-					<div class="oe_right oe_button_box">
-			        	<button class="oe_inline oe_stat_button" states="draft"
-                    	 type="object" string="Get Demand" name="create_forecast_lines" 
-                    	 icon="fa-clock-o"/>
-	                    <button class="oe_inline oe_stat_button" states="draft" 
-                    	 type="object" string="Run Forecast" name="run_forecast" icon="fa-cogs"/>
-                	 	<button class="oe_inline oe_stat_button" type="object" string="Make Plan" name="make_plan" icon="fa fa-tasks" states="open"/>
-					</div>
 
 			        <group colspan="4" col="4" string="Forecast Lines">
 			        	<field name="forecast_lines" colspan="4" nolabel="1"/>
@@ -161,7 +160,7 @@
 					<field name="state"/>
 					<button string="⇒ Plan Production"
                          name="plan_production"
-                         type="object" icon="gtk-go-forward"
+                         type="object" icon="gtk-paste"
                          attrs="{'invisible':['|',('state', '!=', 'draft'),'|',('planning_id','=',False),('planning_line_id','!=',False)]}"/>
 				</tree>
 			</field>

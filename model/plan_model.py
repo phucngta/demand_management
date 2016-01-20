@@ -69,7 +69,9 @@ class PlanningLine(models.Model):
     def _calculate_consult_quantity(self):
         consult_quantity = self.forecast_qty - self.virtual_available + self.product_min_qty
         if consult_quantity > 0:
-            self.consult_qty = consult_quantity        
+            self.consult_qty = consult_quantity
+        else: 
+            self.consult_qty = 0   
 
     name = fields.Char('Planning Line Name', required=True)
 

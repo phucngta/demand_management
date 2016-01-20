@@ -64,9 +64,9 @@
                 </div>
                 <div class="oe_right oe_button_box" name="buttons" groups="base.group_user">
                   <button class="oe_inline oe_stat_button" states="draft"
-                    type="object" string="Create Periods" name="create_period" icon="fa-calendar-check-o"/>
+                    type="object" string="Create Periods" name="create_period" icon="fa-calendar"/>
                   <button class="oe_inline oe_stat_button" states="draft" 
-                    type="object" string="Delete Periods" name="delete_period" icon="fa-calendar-times-o"/>
+                    type="object" string="Delete Periods" name="delete_period" icon="fa-times"/>
                 </div>
                 <group>
                   <group>

@@ -4,7 +4,7 @@ Created on Dec 15, 2015
 @author: Nguyen Phuc
 '''
 from datetime import datetime
-from openerp import models, fields, api
+from openerp import models, fields, api, exceptions
 
 class forecast(models.Model):
     _name = 'demand.forecast'
@@ -90,6 +90,10 @@ class forecast(models.Model):
         ids = self.forecast_lines.mapped('id')
         number_lines = len(ids)
 
+        # Kiem tra alpha
+        if (alpha < 0) | (alpha > 1):
+            raise exceptions.ValidationError("Alpha phai nam trong khoang (0 .. 1)")
+
         # Gan forecast dau tien
         first_forecast_line = forecast_line_obj.browse([ids[0]])
         forecast_value = first_forecast_line.demand_qty
@@ -124,7 +128,7 @@ class forecast(models.Model):
         
         # Kiem tra interval co lon hon so luong lich su
         if number_lines < interval:
-            return False
+            raise exceptions.ValidationError("Interval phai nho hon so luong period")
 
         # Tinh gia tri forecast
         sum_error = sum_ab_error = error = 0

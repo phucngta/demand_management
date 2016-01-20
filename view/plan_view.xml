@@ -80,7 +80,7 @@
                           <field string="On Hand" name="qty_available" widget="statinfo" />
                       </button>
                       <button class="oe_inline oe_stat_button" icon="fa-pencil-square-o">
-                          <field string="Stock Account" name="qty_available" widget="statinfo" />
+                          <field string="Stock Account" name="virtual_available" widget="statinfo" />
                       </button>
                   </div>
               </div>
@@ -103,8 +103,8 @@
 
               <notebook colspan="4">
                 <page string="Lines">
-                  <group string="Forecast Lines"><field name="forecast_lines" nolabel="1" /></group>
-                  <group string="Planning Lines"><field name="planning_lines" nolabel="1" /></group>
+                  <group string="Forecasts"><field name="forecast_lines" nolabel="1" /></group>
+                  <group string="Plans"><field name="planning_lines" nolabel="1" /></group>
                 </page>
 
                 <page string="Information">
@@ -137,7 +137,7 @@
             <field name="state"/>
             <button string="⇒ Request Procurement"
                name="request_procurement"
-               type="object" icon="gtk-paste"
+               type="object" icon="gtk-go-forward"
                attrs="{'invisible':['|',('state', '!=', 'draft'),('procurement_id', '!=',False)]}"/>
           </tree>
         </field>
