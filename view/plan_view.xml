@@ -94,6 +94,7 @@
                 <group>
                     <field name="product_id" />
                     <field name="product_uom" />
+                    <field name="warehouse_id" />
                 </group>
                 <group>
                     <field name="product_min_qty" />
@@ -136,9 +137,13 @@
             <field name="procurement_id" invisible="1"/>
             <field name="state"/>
             <button string="⇒ Request Procurement"
-               name="request_procurement"
+               name="create_procurement"
                type="object" icon="gtk-go-forward"
                attrs="{'invisible':['|',('state', '!=', 'draft'),('procurement_id', '!=',False)]}"/>
+             <button string="⇒ Open Procurement"
+             name="show_procurement"
+             type="object" icon="gtk-open"
+             attrs="{'invisible':[('procurement_id', '=',False)]}"/>
           </tree>
         </field>
       </record>
@@ -176,6 +181,7 @@
                 </group>
                 <group> 
                     <field name="forecast_line_id"/>
+                    <field name="demand_qty"/>
                     <field name="forecast_qty"/>
                 </group>
             </group>

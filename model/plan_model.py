@@ -19,9 +19,9 @@ class planning(models.Model):
 
     name = fields.Char('Planning Name', required=True)
 
-    forecast_id = fields.Many2one('demand.forecast', string = 'Reference', required=True, domain=[('state','=','open')], states={'draft': [('readonly',False)]}, readonly=True)
-    forecast_lines = fields.One2many('demand.forecast.line', 'planning_id',string = 'Forecast Lines',readonly=True, states={'draft': [('readonly',False)]})
-    planning_lines = fields.One2many('demand.planning.line', 'planning_id',string = 'Planning Lines',readonly=True, states={'draft': [('readonly',False)]})
+    forecast_id = fields.Many2one('demand.forecast', string = 'Reference', required=True, domain=[('state','=','open')], readonly=True)
+    forecast_lines = fields.One2many('demand.forecast.line', 'planning_id',string = 'Forecast Lines', readonly=True)
+    planning_lines = fields.One2many('demand.planning.line', 'planning_id',string = 'Planning Lines', readonly=True, states={'draft': [('readonly',False)]})
     
     term_id= fields.Many2one('demand.term', string='Term', readonly=True)
 
@@ -33,6 +33,7 @@ class planning(models.Model):
     incoming_qty = fields.Float('Incoming Quantity', readonly=True, compute=_get_stock)
     outgoing_qty = fields.Float('Outging Quantity', readonly=True, compute=_get_stock)
 
+    warehouse_id = fields.Many2one('stock.warehouse', required=True, string="Warehouse", readonly=True, states={'draft': [('readonly',False)]})
     product_min_qty = fields.Float('Minimum Stock Rule', readonly=True, compute=_get_stock)
     product_max_qty = fields.Float('Maximum Stock Rule', readonly=True, compute=_get_stock)
 
@@ -51,12 +52,10 @@ class planning(models.Model):
 
     @api.multi
     def action_close(self):
+        self.state = 'close'
         self.forecast_id.state  = 'done'
         for line in self.forecast_lines:
             line.state = 'done'
-
-        self.state = 'close'
-        
         for line in self.planning_lines:
             line.state = 'close'
 
@@ -82,6 +81,7 @@ class PlanningLine(models.Model):
     term_id= fields.Many2one('demand.term', string='Term', required=True, readonly=True)
     period_id = fields.Many2one('demand.period', string='Period', required=True, readonly=True)
 
+    demand_qty = fields.Float('Demand Quantity', readonly=True)
     forecast_qty = fields.Float('Forecast Quantity', readonly=True)
 
     qty_available = fields.Float('Stock On Hand', readonly=True)
@@ -113,23 +113,52 @@ class PlanningLine(models.Model):
     def action_close(self):
         self.state = 'close'
 
-    @api.multi
-    def request_procurement(self):
-        self.ensure_one()
-        value_dict = {'product_id': self.planning_id.product_id.id,
-                      'uom_id': self.planning_id.product_id.uom_id.id,
-                      'date_planned': self.period_id.date_start,
-                      'qty': self.plan_qty,
-                      }
-        res_id = self.env['make.procurement'].create(value_dict)
-        self.state = 'open'
+    # @api.multi
+    # def request_procurement(self):
+    #     value_dict = {'product_id': self.planning_id.product_id.id,
+    #                   'uom_id': self.planning_id.product_id.uom_id.id,
+    #                   'date_planned': self.period_id.date_start,
+    #                   'qty': self.plan_qty,
+    #                   }
+    #     res_id = self.env['make.procurement'].create(value_dict)
+    #     self.state = 'open'
 
-        return {'view_type': 'form',
-                'view_mode': 'form',
-                'res_model': 'make.procurement',
-                'res_id': res_id.id,
-                'view_id': False,
-                'type': 'ir.actions.act_window',
-                'target': 'new',
-                }
-        
+    #     return {'view_type': 'form',
+    #             'view_mode': 'form',
+    #             'res_model': 'make.procurement',
+    #             'res_id': res_id.id,
+    #             'view_id': False,
+    #             'type': 'ir.actions.act_window',
+    #             'target': 'new',
+    #             }
+    
+    @api.multi
+    def create_procurement(self):
+        procurement_obj = self.env['procurement.order']
+        # procure_lst = []
+        # for record in self:
+        #     for product_line in record.forecast_lines:
+        if not self.procurement_id.exists():
+            res_id = procurement_obj.create({
+                    'name': 'Procurement ' +self.period_id.name+ '('+self.term_id.name+')',
+                    'date_planned': self.period_id.date_start,
+                    'product_id': self.planning_id.product_id.id,
+                    'product_uom': self.planning_id.product_id.uom_id.id,
+                    'product_qty': self.plan_qty,
+                    'warehouse_id': self.planning_id.warehouse_id.id,
+                    'location_id': self.planning_id.warehouse_id.lot_stock_id.id,
+                    'company_id': self.planning_id.warehouse_id.company_id.id,
+                    'origin': self.name,
+                    })
+            self.procurement_id = res_id.id
+            self.state = 'open'        
+
+    @api.multi
+    def show_procurement(self):
+        return {
+            'view_mode': 'form',
+            'res_model': 'procurement.order',
+            'res_id': self.procurement_id.id,
+            'view_id': False,
+            'type': 'ir.actions.act_window',
+            }

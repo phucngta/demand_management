@@ -91,7 +91,7 @@ class forecast(models.Model):
         number_lines = len(ids)
 
         # Kiem tra alpha
-        if (alpha < 0) | (alpha > 1):
+        if (alpha <= 0) | (alpha >= 1):
             raise exceptions.ValidationError("Alpha phai nam trong khoang (0 .. 1)")
 
         # Gan forecast dau tien
@@ -316,12 +316,11 @@ class ForecastLine (models.Model):
         self.ensure_one()
         plan_line_obj = self.env['demand.planning.line']
 
-        if plan_line_obj.search([('forecast_line_id','=',self.id)]).exists():
-            res_id = plan_obj.search([('forecast_line_id','=', self.id)])
-        else:
+        if not self.planning_line_id.exists():
             res_id = plan_line_obj.create({
                         'name' : 'Plan '+self.period_id.name,
                         'forecast_line_id': self.id,
+                        'demand_qty': self.demand_qty,
                         'forecast_qty': self.forecast_qty,
                         'term_id': self.term_id.id,
                         'period_id': self.period_id.id,
@@ -333,13 +332,13 @@ class ForecastLine (models.Model):
                         'product_min_qty': self.planning_id.product_min_qty,
                         'product_max_qty': self.planning_id.product_max_qty,
                         })
-        self.state = 'open'
-        self.planning_line_id = res_id.id
-
-        return {
-            'view_mode': 'form',
-            'res_model': 'demand.planning',
-            'res_id': self.planning_id.id,
-            'view_id': False,
-            'type': 'ir.actions.act_window',
-            }
+            self.planning_line_id = res_id.id
+            self.state = 'open'
+        
+            return {
+                'view_mode': 'form',
+                'res_model': 'demand.planning',
+                'res_id': self.planning_id.id,
+                'view_id': False,
+                'type': 'ir.actions.act_window',
+                }

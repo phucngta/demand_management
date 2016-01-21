@@ -191,17 +191,16 @@
                       <h1><field name="name" class="oe_inline"/></h1>
                     </div>
 					<group> 
-						<group> <field name="forecast_id"/></group>
+						<group> 
+							<field name="forecast_id"/>
+							<field name="term_id"/>
+						</group>
 						<group> 
 							<field name="planning_id"/>
 							<field name="planning_line_id"/>
 						</group>
 					</group>
 					<group>
-						<group >
-							<field name="term_id"/>
-							<field name="period_id"/>
-						</group>
 						<group>
 							<field name="demand_qty"/>
 							<field name="forecast_qty"/>
