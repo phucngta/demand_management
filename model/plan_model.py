@@ -33,7 +33,7 @@ class planning(models.Model):
     incoming_qty = fields.Float('Incoming Quantity', readonly=True, compute=_get_stock)
     outgoing_qty = fields.Float('Outging Quantity', readonly=True, compute=_get_stock)
 
-    warehouse_id = fields.Many2one('stock.warehouse', required=True, string="Warehouse", readonly=True, states={'draft': [('readonly',False)]})
+    # warehouse_id = fields.Many2one('stock.warehouse', required=True, string="Warehouse", readonly=True, states={'draft': [('readonly',False)]})
     product_min_qty = fields.Float('Minimum Stock Rule', readonly=True, compute=_get_stock)
     product_max_qty = fields.Float('Maximum Stock Rule', readonly=True, compute=_get_stock)
 
@@ -145,9 +145,9 @@ class PlanningLine(models.Model):
                     'product_id': self.planning_id.product_id.id,
                     'product_uom': self.planning_id.product_id.uom_id.id,
                     'product_qty': self.plan_qty,
-                    'warehouse_id': self.planning_id.warehouse_id.id,
-                    'location_id': self.planning_id.warehouse_id.lot_stock_id.id,
-                    'company_id': self.planning_id.warehouse_id.company_id.id,
+                    # 'warehouse_id': self.planning_id.warehouse_id.id,
+                    # 'location_id': self.planning_id.warehouse_id.lot_stock_id.id,
+                    # 'company_id': self.planning_id.warehouse_id.company_id.id,
                     'origin': self.name,
                     })
             self.procurement_id = res_id.id

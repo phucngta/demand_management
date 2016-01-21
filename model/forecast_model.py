@@ -23,7 +23,7 @@ class forecast(models.Model):
         if forecast_line_count > 0:
             self.avg_demand = sum_demand /forecast_line_count
 
-    name = fields.Char('Forecast Name', required=True)
+    name = fields.Char('Forecast Name', default='Forecast')
     term_id= fields.Many2one('demand.term', string='Term', required=True, readonly=True, states={'draft': [('readonly',False)]}, domain=[('state','=','draft')])
     period_id = fields.Many2one('demand.period', string=' End Period', required=True, readonly=True, states={'draft': [('readonly',False)]}, domain=[('state','=','draft')])
 
@@ -187,6 +187,7 @@ class forecast(models.Model):
     @api.one
     @api.depends('period_id','term_id','product_id')
     def create_forecast_lines(self):
+        self.name = 'Forecast '+self.product_id.name+'('+self.term_id.name+')'
         # Xoa forecast line cu
         self.forecast_lines.unlink()
 
@@ -259,7 +260,7 @@ class forecast(models.Model):
             res_id = plan_obj.search([('forecast_id','=', self.id)])
         else:
             value_dict = {
-                        'name' : 'Plan '+self.term_id.name,
+                        'name' : 'Plan '+self.product_id.name+'('+self.term_id.name+')',
                         'forecast_id': self.id,
                         'product_id': self.product_id.id,
                         'product_uom': self.product_uom.id,

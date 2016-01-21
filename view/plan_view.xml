@@ -37,7 +37,6 @@
         <field name="type">tree</field>
         <field name="arch" type="xml">        
           <tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' ">
-            <field name="name" string="Name"/> 
             <field name="term_id"/>
             <field name="product_id"/>
             <field name="forecast_id"/>
@@ -66,6 +65,11 @@
             </header>
 
             <sheet>
+              <div class="oe_title">
+                <label for="name" class="oe_edit_only" string="Name"/>
+                <h1><field name="name" class="oe_inline"/></h1>
+            </div>
+
               <div class="oe_right oe_button_box">
                   <div>
                       <button class="oe_inline oe_stat_button" icon="fa-truck">
@@ -85,16 +89,11 @@
                   </div>
               </div>
 
-              <div class="oe_title">
-                <label for="name" class="oe_edit_only"/>
-                <h1><field name="name" placeholder="Name of planning..."/></h1>
-              </div>
-
               <group>
                 <group>
                     <field name="product_id" />
                     <field name="product_uom" />
-                    <field name="warehouse_id" />
+                    <!-- <field name="warehouse_id" /> -->
                 </group>
                 <group>
                     <field name="product_min_qty" />
