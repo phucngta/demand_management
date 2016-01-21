@@ -254,20 +254,21 @@ class forecast(models.Model):
     @api.multi
     def make_plan(self):
         self.ensure_one()
-
         plan_obj = self.env['demand.planning']
+        value_dict = {
+                    'name' : 'Plan '+self.product_id.name+'('+self.term_id.name+')',
+                    'forecast_id': self.id,
+                    'product_id': self.product_id.id,
+                    'product_uom': self.product_uom.id,
+                    'term_id': self.term_id.id,
+                    }
         if plan_obj.search([('forecast_id','=', self.id)]).exists():
             res_id = plan_obj.search([('forecast_id','=', self.id)])
-        else:
-            value_dict = {
-                        'name' : 'Plan '+self.product_id.name+'('+self.term_id.name+')',
-                        'forecast_id': self.id,
-                        'product_id': self.product_id.id,
-                        'product_uom': self.product_uom.id,
-                        'term_id': self.term_id.id,
-                        }
+            res_id.write(value_dict)
+        else:            
             res_id = plan_obj.create(value_dict)
 
+        # Gan lai id planning cho forecast lines
         for line in self.forecast_lines:
             line.planning_id = res_id.id
 
