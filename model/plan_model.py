@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from openerp import models, fields, api
+from openerp import models, fields, api, exceptions
 
 class planning(models.Model):
     _name = 'demand.planning'
@@ -12,8 +12,8 @@ class planning(models.Model):
                 self.product_min_qty = op.product_min_qty
                 self.product_max_qty = op.product_max_qty
 
-            self.qty_available = self.product_id.qty_available
             self.virtual_available = self.product_id.virtual_available
+            self.qty_available = self.product_id.qty_available
             self.incoming_qty = self.product_id.incoming_qty
             self.outgoing_qty = self.product_id.outgoing_qty
 
@@ -22,18 +22,19 @@ class planning(models.Model):
     forecast_id = fields.Many2one('demand.forecast', string = 'Reference', required=True, domain=[('state','=','open')], readonly=True)
     forecast_lines = fields.One2many('demand.forecast.line', 'planning_id',string = 'Forecast Lines', readonly=True)
     planning_lines = fields.One2many('demand.planning.line', 'planning_id',string = 'Planning Lines', readonly=True, states={'draft': [('readonly',False)]})
+    production_strategy = fields.Selection([('chasing','Chasing'),('level','Level')], "Plan Strategy" ,default='chasing', readonly=True, states={'draft': [('readonly',False)]})
     
     term_id= fields.Many2one('demand.term', string='Term', readonly=True)
 
     product_id = fields.Many2one('product.product',string="Product", readonly=True)
     product_uom = fields.Many2one('product.uom', string='Unit of Measure', readonly=True)
 
-    qty_available = fields.Float('Stock On Hand', readonly=True, compute=_get_stock)
     virtual_available = fields.Float('Stock Accounting', readonly=True, compute=_get_stock)
+    qty_available = fields.Float('Stock On Hand', readonly=True, compute=_get_stock)
     incoming_qty = fields.Float('Incoming Quantity', readonly=True, compute=_get_stock)
     outgoing_qty = fields.Float('Outging Quantity', readonly=True, compute=_get_stock)
 
-    # warehouse_id = fields.Many2one('stock.warehouse', required=True, string="Warehouse", readonly=True, states={'draft': [('readonly',False)]})
+    warehouse_id = fields.Many2one('stock.warehouse', string="Warehouse", readonly=True, states={'draft': [('readonly',False)]})
     product_min_qty = fields.Float('Minimum Stock Rule', readonly=True, compute=_get_stock)
     product_max_qty = fields.Float('Maximum Stock Rule', readonly=True, compute=_get_stock)
 
@@ -59,14 +60,66 @@ class planning(models.Model):
         for line in self.planning_lines:
             line.state = 'close'
 
+    @api.multi
+    def _purchase_per_product(self, pe):
+        # so_obj = self.env['sale.order']
+        purchase_obj = self.env['purchase.order.line']
+
+        # Kiem tra cac don hang ve san pham co ton tai
+        pol_with_product = purchase_obj.search([('product_id','=',self.product_id.id), ('order_id.date_order','>=', pe.date_start), ('order_id.date_order','<=', pe.date_end)])
+        if pol_with_product:
+            sum_quantity = 0
+            for pol in pol_with_product:
+                sum_quantity += pol.product_qty
+            return sum_quantity
+
+    @api.multi
+    def simulation_plans(self):
+        ids = self.planning_lines.mapped('id')
+        number_lines = len(ids)
+
+        # Simulation plan
+        first_plan_line = self.planning_lines.browse([ids[0]])
+        first_plan_line.write({
+            'qty_available': self.virtual_available,
+            'incoming_qty': self._purchase_per_product(first_plan_line.period_id),
+            })
+
+        i = 1
+        while i < number_lines:
+            plan_line = self.planning_lines.browse([ids[i]])
+            plan_line.write({
+                'qty_available': self.product_min_qty,
+                'incoming_qty': self._purchase_per_product(plan_line.period_id),
+            })
+            i += 1
+
+        # Dien MPS theo chien luoc
+        if self.production_strategy == 'chasing':
+            for line in self.planning_lines:
+                line.plan_qty = line.consult_qty
+        elif self.production_strategy == 'level':
+            sum_consult = 0
+            for line in self.planning_lines:
+                sum_consult += line.consult_qty
+            average_consult = sum_consult/number_lines
+
+            for line in self.planning_lines:
+                line.plan_qty = average_consult
+
+    @api.multi
+    def execute_plans(self):
+        for line in self.planning_lines:
+            line.create_procurement()
+        self.state = 'open'
 
 class PlanningLine(models.Model):
     _name = 'demand.planning.line'
 
     @api.one
-    @api.depends('forecast_qty','virtual_available','product_min_qty')
+    @api.depends('qty_available', 'incoming_qty')
     def _calculate_consult_quantity(self):
-        consult_quantity = self.forecast_qty - self.virtual_available + self.product_min_qty
+        consult_quantity = self.forecast_line_id.forecast_qty - (self.qty_available + self.incoming_qty) + self.planning_id.product_min_qty
         if consult_quantity > 0:
             self.consult_qty = consult_quantity
         else: 
@@ -81,16 +134,8 @@ class PlanningLine(models.Model):
     term_id= fields.Many2one('demand.term', string='Term', required=True, readonly=True)
     period_id = fields.Many2one('demand.period', string='Period', required=True, readonly=True)
 
-    demand_qty = fields.Float('Demand Quantity', readonly=True)
-    forecast_qty = fields.Float('Forecast Quantity', readonly=True)
-
-    qty_available = fields.Float('Stock On Hand', readonly=True)
-    virtual_available = fields.Float('Stock Accounting', readonly=True)
+    qty_available = fields.Float('Initial Stock', readonly=True)
     incoming_qty = fields.Float('Incoming Quantity', readonly=True)
-    outgoing_qty = fields.Float('Outging Quantity', readonly=True)
-
-    product_min_qty = fields.Float('Minimum Quantity', readonly=True)
-    product_max_qty = fields.Float('Maximum Quantity', readonly=True)
 
     consult_qty = fields.Float('Consultant Quantity', readonly=True, compute=_calculate_consult_quantity)
     plan_qty = fields.Float('Procurement Quantity', required=True, default=0 ,readonly=True, states={'draft': [('readonly',False)]})
@@ -135,20 +180,17 @@ class PlanningLine(models.Model):
     @api.multi
     def create_procurement(self):
         procurement_obj = self.env['procurement.order']
-        # procure_lst = []
-        # for record in self:
-        #     for product_line in record.forecast_lines:
         if not self.procurement_id.exists():
             res_id = procurement_obj.create({
-                    'name': 'Procurement ' +self.period_id.name+ '('+self.term_id.name+')',
+                    'name': 'Procurement ' +self.planning_id.product_id.name+ '('+self.period_id.name+')',
                     'date_planned': self.period_id.date_start,
                     'product_id': self.planning_id.product_id.id,
                     'product_uom': self.planning_id.product_id.uom_id.id,
                     'product_qty': self.plan_qty,
-                    # 'warehouse_id': self.planning_id.warehouse_id.id,
-                    # 'location_id': self.planning_id.warehouse_id.lot_stock_id.id,
-                    # 'company_id': self.planning_id.warehouse_id.company_id.id,
-                    'origin': self.name,
+                    'warehouse_id': self.planning_id.warehouse_id.id,
+                    'location_id': self.planning_id.warehouse_id.lot_stock_id.id,
+                    'company_id': self.planning_id.warehouse_id.company_id.id,
+                    'origin': self.planning_id.name,
                     })
             self.procurement_id = res_id.id
             self.state = 'open'        

@@ -322,17 +322,9 @@ class ForecastLine (models.Model):
             res_id = plan_line_obj.create({
                         'name' : 'Plan '+self.period_id.name,
                         'forecast_line_id': self.id,
-                        'demand_qty': self.demand_qty,
-                        'forecast_qty': self.forecast_qty,
+                        'planning_id':self.planning_id.id,
                         'term_id': self.term_id.id,
                         'period_id': self.period_id.id,
-                        'planning_id':self.planning_id.id,
-                        'qty_available': self.planning_id.qty_available,
-                        'virtual_available': self.planning_id.virtual_available,
-                        'incoming_qty': self.planning_id.incoming_qty,
-                        'outgoing_qty': self.planning_id.outgoing_qty,
-                        'product_min_qty': self.planning_id.product_min_qty,
-                        'product_max_qty': self.planning_id.product_max_qty,
                         })
             self.planning_line_id = res_id.id
             self.state = 'open'

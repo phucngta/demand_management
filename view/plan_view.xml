@@ -39,6 +39,7 @@
           <tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' ">
             <field name="term_id"/>
             <field name="product_id"/>
+            <field name="production_strategy" string="Strategy"/>
             <field name="forecast_id"/>
             <field name="state"/>  
           </tree>
@@ -87,30 +88,37 @@
                           <field string="Stock Account" name="virtual_available" widget="statinfo" />
                       </button>
                   </div>
+                  <div>
+                      <button class="oe_inline oe_stat_button" type="object" string="Simulation Plan" name="simulation_plans" icon="fa-magic" states="draft"/>
+                      <button class="oe_inline oe_stat_button" type="object" string="Execute Plan" name="execute_plans" icon="fa-check-square-o" states="draft"/>
+                  </div>
               </div>
 
               <group>
-                <group>
-                    <field name="product_id" />
-                    <field name="product_uom" />
-                    <!-- <field name="warehouse_id" /> -->
-                </group>
-                <group>
-                    <field name="product_min_qty" />
-                    <field name="product_max_qty" />
-                </group>
-              </group>
+                    <group><field name="production_strategy" /></group>
+                    <group><field name="warehouse_id" required="1"/></group>
+                  </group>
 
               <notebook colspan="4">
                 <page string="Lines">
                   <group string="Forecasts"><field name="forecast_lines" nolabel="1" /></group>
                   <group string="Plans"><field name="planning_lines" nolabel="1" /></group>
                 </page>
-
                 <page string="Information">
                   <group>
                     <field name="forecast_id" />
                     <field name="term_id" />
+                  </group>
+
+                  <group>
+                    <group>
+                        <field name="product_id" />
+                        <field name="product_uom" />
+                    </group>
+                    <group>
+                        <field name="product_min_qty" />
+                        <field name="product_max_qty" />
+                    </group>
                   </group>
                 </page>
               </notebook>
@@ -130,11 +138,12 @@
         <field name="arch" type="xml">        
           <tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' " >
             <field name="name" string="Name"/>
-            <field name="virtual_available" string="Stock"/>
+            <field name="qty_available" string="Initial Stock"/>
+            <field name="incoming_qty" string="Incoming"/>
             <field name="consult_qty" string="Consultant"/>
             <field name="plan_qty" string="Procurement"/> 
             <field name="procurement_id" invisible="1"/>
-            <field name="state"/>
+            <field name="state"  invisible="1"/>
             <button string="⇒ Request Procurement"
                name="create_procurement"
                type="object" icon="gtk-go-forward"
@@ -173,27 +182,15 @@
             </div>
             <group> 
                 <group> 
-                    <field name="planning_id"/>
-                    <field name="consult_qty"/>
-                    <field name="plan_qty"/>
-                    <field name="procurement_id" />
-                </group>
-                <group> 
-                    <field name="forecast_line_id"/>
-                    <field name="demand_qty"/>
-                    <field name="forecast_qty"/>
-                </group>
-            </group>
-            <group>
-                <group string="Stock Situation">
                     <field name="qty_available"/>
                     <field name="incoming_qty"/>
-                    <field name="outgoing_qty"/>
-                    <field name="virtual_available"/>
+                    <field name="consult_qty"/>
+                    <field name="plan_qty"/>
                 </group>
-                <group string="Stock Rule">
-                    <field name="product_min_qty"/>
-                    <field name="product_max_qty"/>
+                <group> 
+                    <field name="planning_id"/>
+                    <field name="forecast_line_id"/>
+                    <field name="procurement_id"/>
                 </group>
             </group>
           </sheet>
