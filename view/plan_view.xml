@@ -73,19 +73,11 @@
 
               <div class="oe_right oe_button_box">
                   <div>
-                      <button class="oe_inline oe_stat_button" icon="fa-truck">
-                          <field string="Incoming" name="incoming_qty" widget="statinfo" />
-                      </button>
-                      <button class="oe_inline oe_stat_button" icon="fa-sign-out">
-                          <field string="Outgoing" name="outgoing_qty" widget="statinfo" />
-                      </button>
-                  </div>
-                  <div>
                       <button class="oe_inline oe_stat_button" icon="fa-building-o" >
-                          <field string="On Hand" name="qty_available" widget="statinfo" />
+                          <field string="Current Stock" name="virtual_available" widget="statinfo"/>
                       </button>
                       <button class="oe_inline oe_stat_button" icon="fa-pencil-square-o">
-                          <field string="Stock Account" name="virtual_available" widget="statinfo" />
+                          <field string="Mininum Stock" name="product_min_qty" widget="statinfo"/>
                       </button>
                   </div>
                   <div>
@@ -106,16 +98,24 @@
                 </page>
                 <page string="Information">
                   <group>
-                    <field name="forecast_id" />
-                    <field name="term_id" />
-                  </group>
-
-                  <group>
+                    <group>
+                        <field name="forecast_id" />
+                        <field name="term_id" />
+                    </group>
                     <group>
                         <field name="product_id" />
                         <field name="product_uom" />
                     </group>
-                    <group>
+                  </group>
+
+                  <group>
+                    <group string="Stock Situation">
+                        <field name="qty_available" />
+                        <field name="incoming_qty" />
+                        <field name="outgoing_qty" />
+                        <field name="virtual_available" />
+                    </group>
+                    <group string="Stock Rule">
                         <field name="product_min_qty" />
                         <field name="product_max_qty" />
                     </group>
