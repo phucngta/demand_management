@@ -89,7 +89,6 @@
 		                    <button class="oe_inline oe_stat_button" type="object" string="Show Graph" name="show_graph_forecast" icon="fa-line-chart"/>
 		                </div>
                     </div>
-                    <group></group>
 					<group name="group_top">
 						<group name="group left">
 							<field name="term_id"/>
@@ -112,6 +111,7 @@
 							</div>
 						</group>
 						<group>
+
 							<field name="mad" readonly="1"/>
 						    <field name="mape" readonly="1"/>
 						    <field name="track_signal" readonly="1"/>
@@ -129,9 +129,12 @@
 								</group>
 							</group>
 						</page>
-						<page string="Log">
+						<page string="Information">
 							<group>
 								<field name="name"/>
+							</group>
+							<group string="History">
+								<field name="forecast_history" nolabel="1"/>
 							</group>
 						</page>
 					</notebook>

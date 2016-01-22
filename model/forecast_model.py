@@ -32,6 +32,8 @@ class forecast(models.Model):
     forecast_lines = fields.One2many('demand.forecast.line', 'forecast_id', string='Forecast Line',readonly=True, states={'draft': [('readonly',False)]})
 
     forecast_method = fields.Selection([('sma','Simple Moving Average'),('es','Exponential Smoothing')], "Method" ,default='sma', readonly=True, states={'draft': [('readonly',False)]})
+    forecast_history = fields.Text(string='History', readonly=True)
+
     interval = fields.Integer('Interval', required = True, default=2, readonly=True, states={'draft': [('readonly',False)]})
     alpha = fields.Float('Alpha', required = True, default=0.5, readonly=True, states={'draft': [('readonly',False)]})
     
@@ -127,7 +129,7 @@ class forecast(models.Model):
         number_lines = len(ids)
         
         # Kiem tra interval co lon hon so luong lich su
-        if number_lines < interval:
+        if interval >= number_lines:
             raise exceptions.ValidationError("Interval phai nho hon so luong period")
 
         # Tinh gia tri forecast
@@ -159,6 +161,8 @@ class forecast(models.Model):
 
         # Tinh sai lech
         self.mad = sum_ab_error/(number_lines - interval)
+        if self.avg_demand == 0:
+            raise exceptions.ValidationError("Khong co du lieu de du bao")
         self.mape = self.mad/self.avg_demand
         self.track_signal = sum_error/self.mad
 
@@ -167,8 +171,13 @@ class forecast(models.Model):
     def run_forecast(self):
         if self.forecast_method == 'es':
             self._forecast_by_exponentail_smoothing(self.alpha)
+            self.forecast_history += 'Exponential Smoothing - Alpha: '+str(self.alpha)+'\n'
+
         elif  self.forecast_method == 'sma':
             self._forecast_by_simple_moving_average(self.interval)
+            self.forecast_history += 'Simple Moving Average - Interval: '+str(self.interval)+'\n'
+        
+        self.forecast_history += 'MAD: '+str(self.mad)+' - MAPE: '+str(self.mape)+' - Tracking Signal : '+str(self.mape)+'\n'+ '=============================================================='+'\n'
 
     @api.multi
     @api.depends('product_id')
@@ -188,6 +197,7 @@ class forecast(models.Model):
     @api.depends('period_id','term_id','product_id')
     def create_forecast_lines(self):
         self.name = 'Forecast '+self.product_id.name+'('+self.term_id.name+')'
+        self.forecast_history = ''
         # Xoa forecast line cu
         self.forecast_lines.unlink()
 
