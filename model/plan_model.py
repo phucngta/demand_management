@@ -10,9 +10,11 @@ class planning(models.Model):
         if self.product_id:
             for op in self.product_id.orderpoint_ids:
                 self.product_min_qty = op.product_min_qty
+                self.product_min_qty_text =str(op.product_min_qty)
                 self.product_max_qty = op.product_max_qty
 
             self.virtual_available = self.product_id.virtual_available
+            self.virtual_available_text = str(self.product_id.virtual_available)
             self.qty_available = self.product_id.qty_available
             self.incoming_qty = self.product_id.incoming_qty
             self.outgoing_qty = self.product_id.outgoing_qty
@@ -30,12 +32,15 @@ class planning(models.Model):
     product_uom = fields.Many2one('product.uom', string='Unit of Measure', readonly=True)
 
     virtual_available = fields.Float('Stock Accounting', readonly=True, compute=_get_stock)
+    virtual_available_text = fields.Char(readonly =True, compute= _get_stock)
     qty_available = fields.Float('Stock On Hand', readonly=True, compute=_get_stock)
     incoming_qty = fields.Float('Incoming Quantity', readonly=True, compute=_get_stock)
     outgoing_qty = fields.Float('Outging Quantity', readonly=True, compute=_get_stock)
 
     warehouse_id = fields.Many2one('stock.warehouse', string="Warehouse", readonly=True, states={'draft': [('readonly',False)]})
+
     product_min_qty = fields.Float('Minimum Stock Rule', readonly=True, compute=_get_stock)
+    product_min_qty_text = fields.Char(readonly =True, compute= _get_stock)
     product_max_qty = fields.Float('Maximum Stock Rule', readonly=True, compute=_get_stock)
 
     state = fields.Selection([
@@ -59,6 +64,23 @@ class planning(models.Model):
             line.state = 'done'
         for line in self.planning_lines:
             line.state = 'close'
+
+    @api.multi
+    def action_view_orderpoint(self):
+        orderpoint_lst = []
+        orderpoint_obj = self.env['stock.warehouse.orderpoint']
+        
+        for op in orderpoint_obj:
+            if op.product_id == self.product_id:
+                orderpoint_lst.append(op.id)
+            
+        return {
+            'view_mode': 'tree,form',
+            'res_model': 'stock.warehouse.orderpoint',
+            'res_id': orderpoint_lst,
+            'view_id': False,
+            'type': 'ir.actions.act_window',
+            }
 
     @api.multi
     def _purchase_per_product(self, pe):

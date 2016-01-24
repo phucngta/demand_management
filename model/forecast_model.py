@@ -171,13 +171,13 @@ class forecast(models.Model):
     def run_forecast(self):
         if self.forecast_method == 'es':
             self._forecast_by_exponentail_smoothing(self.alpha)
-            self.forecast_history += 'Exponential Smoothing - Alpha: '+str(self.alpha)+'\n'
+            self.forecast_history += 'Exponential Smoothing - Alpha: '+str(self.alpha)
 
         elif  self.forecast_method == 'sma':
             self._forecast_by_simple_moving_average(self.interval)
-            self.forecast_history += 'Simple Moving Average - Interval: '+str(self.interval)+'\n'
+            self.forecast_history += 'Simple Moving Average - Interval: '+str(self.interval)
         
-        self.forecast_history += 'MAD: '+str(self.mad)+' - MAPE: '+str(self.mape)+' - Tracking Signal : '+str(self.mape)+'\n'+ '=============================================================='+'\n'
+        self.forecast_history += '\n + MAD: '+str(self.mad)+'\n + MAPE: '+str(self.mape)+'\n + Tracking Signal : '+str(self.track_signal)+'\n'+ '=============================================================='+'\n'
 
     @api.multi
     @api.depends('product_id')
@@ -237,6 +237,15 @@ class forecast(models.Model):
                     'state' : 'done',
                 })
 
+    @api.one
+    def clear_lines(self):
+        forecast_obj = self.env['demand.forecast']
+        if forecast_obj.search([('name','=','Actual: '+self.name)]).exists():
+            tmp_demand = forecast_obj.search([('name','=','Actual: '+self.name)])
+            tmp_demand.forecast_lines.unlink()
+            tmp_demand.unlink()
+        self.forecast_lines.unlink()
+
     @api.multi
     def show_graph_forecast(self):
         forecast_line_lst = []
@@ -249,7 +258,7 @@ class forecast(models.Model):
                     forecast_line_lst.append(line.id)
 
         for line in self.forecast_lines:
-            if line.id:
+            if line.forecast_qty != 0:
                 forecast_line_lst.append(line.id)
 
         return {

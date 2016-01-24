@@ -60,7 +60,7 @@ class Term(models.Model):
         # Tao period moi
         period_obj = self.env['demand.period']        
         ds = datetime.strptime(self.date_start, '%Y-%m-%d')
-        
+      
         if self.type_period == 'month':
             while ds.strftime('%Y-%m-%d') < self.date_end:
                     de = ds + relativedelta(months = self.num_cycle, days=-1)
@@ -84,7 +84,7 @@ class Term(models.Model):
                         de = datetime.strptime(self.date_end, '%Y-%m-%d')
     
                     period_obj.create({
-                        'name': ds.strftime('Week %W %m/%Y'),
+                        'name': ds.strftime('W%W %m/%Y'),
                         'date_start': ds.strftime('%Y-%m-%d'),
                         'date_end': de.strftime('%Y-%m-%d'),
                         'term_id': self.id,
@@ -99,7 +99,7 @@ class Term(models.Model):
                         de = datetime.strptime(self.date_end, '%Y-%m-%d')
     
                     period_obj.create({
-                        'name': ds.strftime('Period %d')+de.strftime('-%d')+ds.strftime('/%m'),
+                        'name': ds.strftime('P%d')+de.strftime('-%d')+ds.strftime('/%m'),
                         'date_start': ds.strftime('%Y-%m-%d'),
                         'date_end': de.strftime('%Y-%m-%d'),
                         'term_id': self.id,

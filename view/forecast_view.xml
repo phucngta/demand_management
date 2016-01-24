@@ -100,7 +100,7 @@
 						</group>
 					</group>
 
-					 <group name="group_mid" string="Calculate">
+					 <group name="group_mid">
 						<group>
 							<field name="forecast_method"/>
 							<field name="interval" attrs="{'invisible':[('forecast_method', '!=', 'sma')]}"/>
@@ -125,7 +125,12 @@
 								<group>
 									<field name="avg_demand" readonly="1"/>
 								</group>
-								<group class="oe_subtotal_footer oe_right">
+								<!-- oe_subtotal_footer  -->
+								<group class="oe_right">
+								<label for="clear_lines"/>
+									<div>
+										<button string="Clear Lines" states="draft" type="object" name="clear_lines" class="oe_inline"/>
+									</div>
 								</group>
 							</group>
 						</page>
@@ -172,7 +177,7 @@
 					<field name="state" />
 					<button string="⇒ Plan Production"
                          name="plan_production"
-                         type="object" icon="gtk-paste"
+                         type="object" icon="gtk-go-forward"
                          attrs="{'invisible':['|',('state', '!=', 'draft'),'|',('planning_id','=',False),('planning_line_id','!=',False)]}"/>
 				</tree>
 			</field>
@@ -225,8 +230,8 @@
 			<field name="arch" type="xml">
 				<graph name="forecast_line.graph" type="line">
 					<field name="period_id" type="row"/>
-	        			<field name="forecast_id" type="col"/>
-						<field name="forecast_qty" type="measure"/>
+        			<field name="forecast_id" type="col"/>
+					<field name="forecast_qty" type="measure"/>
 				</graph>
 			</field>
 		</record>

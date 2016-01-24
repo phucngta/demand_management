@@ -74,10 +74,10 @@
               <div class="oe_right oe_button_box">
                   <div>
                       <button class="oe_inline oe_stat_button" icon="fa-building-o" >
-                          <field string="Current Stock" name="virtual_available" widget="statinfo"/>
+                          <field string="Current Stock" name="virtual_available_text"  widget="statinfo"/>
                       </button>
-                      <button class="oe_inline oe_stat_button" icon="fa-pencil-square-o">
-                          <field string="Mininum Stock" name="product_min_qty" widget="statinfo"/>
+                      <button name="action_view_orderpoint" type="object" class="oe_inline oe_stat_button" icon="fa-refresh">
+                          <field string="Mininum Stock" name="product_min_qty_text" widget="statinfo"/>
                       </button>
                   </div>
                   <div>
@@ -87,9 +87,9 @@
               </div>
 
               <group>
-                    <group><field name="production_strategy" /></group>
-                    <group><field name="warehouse_id" required="1"/></group>
-                  </group>
+                  <group><field name="production_strategy" /></group>
+                  <group><field name="warehouse_id" required="1"/></group>
+              </group>
 
               <notebook colspan="4">
                 <page string="Lines">
@@ -136,7 +136,7 @@
         <field name="model">demand.planning.line</field>
         <field name="type">tree</field>
         <field name="arch" type="xml">        
-          <tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' " >
+          <tree colors="black:state == 'draft'; blue:state == 'open'; gray:state == 'done' " editable="1">
             <field name="name" string="Name"/>
             <field name="qty_available" string="Initial Stock"/>
             <field name="incoming_qty" string="Incoming"/>
@@ -146,7 +146,7 @@
             <field name="state"  invisible="1"/>
             <button string="⇒ Request Procurement"
                name="create_procurement"
-               type="object" icon="gtk-go-forward"
+               type="object" icon="gtk-execute"
                attrs="{'invisible':['|',('state', '!=', 'draft'),('procurement_id', '!=',False)]}"/>
              <button string="⇒ Open Procurement"
              name="show_procurement"
